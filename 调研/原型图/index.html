@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>铝箔MES系统 - 原型导航</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --primary-dark: #0a1628;
+        --accent-cyan: #00d4ff;
+        --accent-green: #00ff88;
+        --accent-orange: #ff9500;
+        --accent-purple: #a855f7;
+        --text-primary: #e8f4ff;
+        --text-secondary: #8ba3c7;
+        --border-subtle: rgba(0, 212, 255, 0.15);
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: "Noto Sans SC", sans-serif;
+        background: linear-gradient(
+          135deg,
+          #0a1628 0%,
+          #1a2d4a 50%,
+          #0d1d33 100%
+        );
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px 20px;
+        color: var(--text-primary);
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 60px;
+      }
+      .logo {
+        font-size: 48px;
+        font-weight: 700;
+        margin-bottom: 16px;
+        background: linear-gradient(
+          90deg,
+          var(--accent-cyan),
+          var(--accent-green)
+        );
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+      .subtitle {
+        font-size: 18px;
+        color: var(--text-secondary);
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 24px;
+        max-width: 900px;
+      }
+      .card {
+        background: linear-gradient(
+          145deg,
+          rgba(30, 58, 95, 0.8) 0%,
+          rgba(15, 35, 60, 0.9) 100%
+        );
+        border: 1px solid var(--border-subtle);
+        border-radius: 20px;
+        padding: 32px;
+        text-decoration: none;
+        transition: all 0.3s;
+        position: relative;
+        overflow: hidden;
+      }
+      .card::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        opacity: 0;
+        transition: opacity 0.3s;
+      }
+      .card:hover {
+        transform: translateY(-8px);
+        border-color: rgba(0, 212, 255, 0.4);
+        box-shadow: 0 20px 60px rgba(0, 212, 255, 0.15);
+      }
+      .card:hover::before {
+        opacity: 1;
+      }
+      .card:nth-child(1)::before {
+        background: linear-gradient(90deg, var(--accent-cyan), #0099cc);
+      }
+      .card:nth-child(2)::before {
+        background: linear-gradient(90deg, var(--accent-green), #00cc6a);
+      }
+      .card:nth-child(3)::before {
+        background: linear-gradient(90deg, var(--accent-orange), #cc7700);
+      }
+      .card:nth-child(4)::before {
+        background: linear-gradient(90deg, var(--accent-purple), #8b5cf6);
+      }
+      .card-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 20px;
+        font-size: 28px;
+      }
+      .card:nth-child(1) .card-icon {
+        background: linear-gradient(135deg, var(--accent-cyan), #0099cc);
+      }
+      .card:nth-child(2) .card-icon {
+        background: linear-gradient(135deg, var(--accent-green), #00cc6a);
+      }
+      .card:nth-child(3) .card-icon {
+        background: linear-gradient(135deg, var(--accent-orange), #cc7700);
+      }
+      .card:nth-child(4) .card-icon {
+        background: linear-gradient(135deg, var(--accent-purple), #8b5cf6);
+      }
+      .card-title {
+        font-size: 20px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+      .card-desc {
+        font-size: 14px;
+        color: var(--text-secondary);
+        line-height: 1.6;
+      }
+      .card-pain {
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border-subtle);
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+      .card-pain strong {
+        color: var(--accent-cyan);
+      }
+      .footer {
+        margin-top: 60px;
+        text-align: center;
+        color: var(--text-secondary);
+        font-size: 14px;
+      }
+      @media (max-width: 768px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="header">
+      <h1 class="logo">铝箔MES智能管理系统</h1>
+      <p class="subtitle">四大核心模块原型演示 · 解决生产管理痛点</p>
+    </header>
+
+    <div class="grid">
+      <a href="01_排产模块_生产计划看板.html" class="card">
+        <div class="card-icon">📋</div>
+        <h2 class="card-title">排产模块</h2>
+        <p class="card-desc">
+          生产计划看板，统一管理轧机/分切/精切计划，机台状态监控，交期预警
+        </p>
+        <div class="card-pain">
+          <strong>解决痛点：</strong>计划管理分散（32个Excel表格）
+        </div>
+      </a>
+      <a href="02_质量模块_评审管理.html" class="card">
+        <div class="card-icon">✅</div>
+        <h2 class="card-title">质量模块</h2>
+        <p class="card-desc">
+          结构化评审录入，检测数据展示，评审队列管理，历史记录追溯
+        </p>
+        <div class="card-pain">
+          <strong>解决痛点：</strong>质量评审不规范且传递断链
+        </div>
+      </a>
+      <a href="03_物料管理_在制品追踪.html" class="card">
+        <div class="card-icon">📦</div>
+        <h2 class="card-title">物料管理</h2>
+        <p class="card-desc">
+          库位地图可视化，快速定位搜索，呆滞物料预警，工序流转追踪
+        </p>
+        <div class="card-pain">
+          <strong>解决痛点：</strong>在制品追踪困难（找料难）
+        </div>
+      </a>
+      <a href="04_生产执行_订单跟踪.html" class="card">
+        <div class="card-icon">🚀</div>
+        <h2 class="card-title">生产执行</h2>
+        <p class="card-desc">订单看板，工序进度追踪，交期日历，实时产量统计</p>
+        <div class="card-pain"><strong>解决痛点：</strong>订单进度不透明</div>
+      </a>
+    </div>
+
+    <footer class="footer">
+      <p>基于 MES系统项目方案_痛点分析与解决方案.md 生成 · 2026年2月</p>
+    </footer>
+  </body>
+</html>

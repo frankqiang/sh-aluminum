@@ -1,0 +1,1143 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>生产执行 - 订单跟踪 | 铝箔MES系统</title>
+    <meta name="description" content="订单状态实时跟踪，交期预警" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles/theme.css" />
+    <style>
+      /* 订单看板 */
+      .kanban-container {
+        display: flex;
+        gap: 20px;
+        overflow-x: auto;
+        padding-bottom: 16px;
+      }
+      .kanban-column {
+        min-width: 320px;
+        flex: 1;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 16px;
+        display: flex;
+        flex-direction: column;
+      }
+      .kanban-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .kanban-title {
+        font-size: 15px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .kanban-count {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        background: rgba(0, 212, 255, 0.15);
+        color: var(--accent-cyan);
+      }
+      .kanban-body {
+        padding: 16px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: 600px;
+        overflow-y: auto;
+      }
+      .kanban-body::-webkit-scrollbar {
+        width: 6px;
+      }
+      .kanban-body::-webkit-scrollbar-thumb {
+        background: var(--border-subtle);
+        border-radius: 3px;
+      }
+
+      /* 订单卡片 */
+      .order-card {
+        background: var(--gradient-card);
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid var(--border-subtle);
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .order-card:hover {
+        border-color: var(--border-glow);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-glow);
+      }
+      .order-card.urgent {
+        border-left: 3px solid var(--accent-red);
+      }
+      .order-card.warning {
+        border-left: 3px solid var(--accent-orange);
+      }
+
+      .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 12px;
+      }
+      .order-id {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .order-customer {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-top: 2px;
+      }
+      .order-priority {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .order-priority.urgent {
+        background: rgba(255, 71, 87, 0.15);
+        color: var(--accent-red);
+      }
+      .order-priority.important {
+        background: rgba(255, 149, 0, 0.15);
+        color: var(--accent-orange);
+      }
+      .order-priority.normal {
+        background: rgba(0, 212, 255, 0.15);
+        color: var(--accent-cyan);
+      }
+
+      .order-specs {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .order-specs span {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .order-progress {
+        margin-bottom: 12px;
+      }
+      .progress-header {
+        display: flex;
+        justify-content: space-between;
+        font-size: 12px;
+        margin-bottom: 6px;
+      }
+      .progress-label {
+        color: var(--text-secondary);
+      }
+      .progress-value {
+        font-weight: 600;
+      }
+      .progress-bar {
+        height: 6px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.5s;
+      }
+      .progress-fill.good {
+        background: linear-gradient(90deg, var(--accent-green), #00cc6a);
+      }
+      .progress-fill.warning {
+        background: linear-gradient(90deg, var(--accent-orange), #cc7700);
+      }
+      .progress-fill.danger {
+        background: linear-gradient(90deg, var(--accent-red), #cc3a47);
+      }
+
+      .order-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid var(--border-subtle);
+      }
+      .order-deadline {
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .order-deadline.urgent {
+        color: var(--accent-red);
+      }
+      .order-deadline.warning {
+        color: var(--accent-orange);
+      }
+      .order-deadline.normal {
+        color: var(--text-muted);
+      }
+      .order-qty {
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      /* 工序进度指示器 */
+      .process-steps {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 12px;
+      }
+      .process-step {
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(139, 163, 199, 0.2);
+      }
+      .process-step.completed {
+        background: var(--accent-green);
+      }
+      .process-step.current {
+        background: var(--accent-cyan);
+        animation: pulse-step 1.5s infinite;
+      }
+      @keyframes pulse-step {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      .process-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 6px;
+        font-size: 10px;
+        color: var(--text-muted);
+      }
+
+      /* 右侧面板 */
+      .sidebar {
+        width: 380px;
+        flex-shrink: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+      .content-layout {
+        display: flex;
+        gap: 24px;
+      }
+
+      /* 交期日历 */
+      .calendar-mini {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+      }
+      .calendar-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .calendar-title {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .calendar-nav {
+        display: flex;
+        gap: 8px;
+      }
+      .calendar-nav button {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-secondary);
+        cursor: pointer;
+      }
+      .calendar-nav button:hover {
+        border-color: var(--border-glow);
+        color: var(--text-primary);
+      }
+
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+        text-align: center;
+      }
+      .calendar-weekday {
+        font-size: 11px;
+        color: var(--text-muted);
+        padding: 8px 0;
+      }
+      .calendar-day {
+        padding: 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+      }
+      .calendar-day:hover {
+        background: rgba(0, 212, 255, 0.1);
+      }
+      .calendar-day.today {
+        background: rgba(0, 212, 255, 0.2);
+        color: var(--accent-cyan);
+        font-weight: 600;
+      }
+      .calendar-day.has-deadline::after {
+        content: "";
+        position: absolute;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 4px;
+        height: 4px;
+        border-radius: 50%;
+        background: var(--accent-orange);
+      }
+      .calendar-day.has-deadline.urgent::after {
+        background: var(--accent-red);
+      }
+      .calendar-day.other-month {
+        color: var(--text-muted);
+        opacity: 0.5;
+      }
+
+      /* 交期预警列表 */
+      .deadline-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .deadline-item {
+        display: flex;
+        gap: 12px;
+        padding: 14px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        border-left: 3px solid transparent;
+      }
+      .deadline-item.overdue {
+        border-left-color: var(--accent-red);
+        background: rgba(255, 71, 87, 0.08);
+      }
+      .deadline-item.today {
+        border-left-color: var(--accent-orange);
+        background: rgba(255, 149, 0, 0.08);
+      }
+      .deadline-item.soon {
+        border-left-color: var(--accent-cyan);
+        background: rgba(0, 212, 255, 0.08);
+      }
+      .deadline-date {
+        width: 48px;
+        text-align: center;
+        flex-shrink: 0;
+      }
+      .deadline-day {
+        font-size: 24px;
+        font-weight: 700;
+      }
+      .deadline-month {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .deadline-info {
+        flex: 1;
+      }
+      .deadline-order {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .deadline-customer {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+      .deadline-status {
+        font-size: 11px;
+        margin-top: 4px;
+      }
+      .deadline-item.overdue .deadline-status {
+        color: var(--accent-red);
+      }
+      .deadline-item.today .deadline-status {
+        color: var(--accent-orange);
+      }
+      .deadline-item.soon .deadline-status {
+        color: var(--accent-cyan);
+      }
+
+      /* 实时统计 */
+      .realtime-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      .realtime-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+      }
+      .realtime-value {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .realtime-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+      .realtime-trend {
+        font-size: 11px;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+      }
+      .realtime-trend.up {
+        color: var(--accent-green);
+      }
+      .realtime-trend.down {
+        color: var(--accent-red);
+      }
+
+      @media (max-width: 1400px) {
+        .content-layout {
+          flex-direction: column;
+        }
+        .sidebar {
+          width: 100%;
+        }
+        .kanban-container {
+          flex-wrap: nowrap;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="top-nav">
+      <div class="logo-section">
+        <div class="logo-icon">M</div>
+        <span class="logo-text">MOSES智能管理系统</span>
+      </div>
+      <div class="nav-menu">
+        <div class="nav-item">排产管理</div>
+        <div class="nav-item">质量评审</div>
+        <div class="nav-item">物料追踪</div>
+        <div class="nav-item active">生产执行</div>
+      </div>
+      <div class="user-section">
+        <div class="notification-btn">
+          <svg class="icon" viewBox="0 0 24 24">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <div class="notification-badge"></div>
+        </div>
+        <div class="user-avatar">赵</div>
+      </div>
+    </nav>
+
+    <main class="main-container">
+      <header class="page-header">
+        <div class="page-title-section">
+          <h1>生产执行看板</h1>
+          <p class="page-subtitle">
+            订单状态实时跟踪 · 交期预警 · 解决"进度不透明"问题
+          </p>
+        </div>
+        <div style="display: flex; gap: 12px">
+          <button class="btn btn-secondary">
+            <svg class="icon icon-sm" viewBox="0 0 24 24">
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <line x1="16" y1="2" x2="16" y2="6" />
+              <line x1="8" y1="2" x2="8" y2="6" />
+              <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            交期日历
+          </button>
+          <button class="btn btn-primary">
+            <svg class="icon icon-sm" viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            导出报表
+          </button>
+        </div>
+      </header>
+
+      <!-- 统计卡片 -->
+      <section class="stats-grid" style="grid-template-columns: repeat(5, 1fr)">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-cyan),
+                  #0099cc
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">48</div>
+          <div class="stat-label">进行中订单</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-green),
+                  #00cc6a
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">12</div>
+          <div class="stat-label">今日完成</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-orange),
+                  #cc7700
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">5</div>
+          <div class="stat-label">3日内交期</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(135deg, var(--accent-red), #cc3a47);
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <path
+                  d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">2</div>
+          <div class="stat-label">逾期风险</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-purple),
+                  #8b5cf6
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">94.2%</div>
+          <div class="stat-label">按时交付率</div>
+        </div>
+      </section>
+
+      <div class="content-layout">
+        <!-- 订单看板 -->
+        <div style="flex: 1; overflow-x: auto">
+          <div class="kanban-container">
+            <!-- 待生产 -->
+            <div class="kanban-column">
+              <div class="kanban-header">
+                <div class="kanban-title">
+                  <span
+                    style="
+                      width: 12px;
+                      height: 12px;
+                      border-radius: 3px;
+                      background: var(--text-muted);
+                    "
+                  ></span>
+                  待生产
+                </div>
+                <span class="kanban-count">8</span>
+              </div>
+              <div class="kanban-body">
+                <div class="order-card warning">
+                  <div class="order-header">
+                    <div>
+                      <div class="order-id">SZ2602040001</div>
+                      <div class="order-customer">天能电池</div>
+                    </div>
+                    <span class="order-priority important">重要</span>
+                  </div>
+                  <div class="order-specs">
+                    <span>📏 12μm × 500mm</span>
+                    <span>📦 15吨</span>
+                  </div>
+                  <div class="order-footer">
+                    <div class="order-deadline warning">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      02-07 交期
+                    </div>
+                    <span class="order-qty">剩余 15吨</span>
+                  </div>
+                </div>
+                <div class="order-card">
+                  <div class="order-header">
+                    <div>
+                      <div class="order-id">SZ2602040002</div>
+                      <div class="order-customer">比亚迪</div>
+                    </div>
+                    <span class="order-priority normal">常规</span>
+                  </div>
+                  <div class="order-specs">
+                    <span>📏 10μm × 650mm</span>
+                    <span>📦 20吨</span>
+                  </div>
+                  <div class="order-footer">
+                    <div class="order-deadline normal">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      02-15 交期
+                    </div>
+                    <span class="order-qty">剩余 20吨</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 轧制中 -->
+            <div class="kanban-column">
+              <div class="kanban-header">
+                <div class="kanban-title">
+                  <span
+                    style="
+                      width: 12px;
+                      height: 12px;
+                      border-radius: 3px;
+                      background: var(--accent-cyan);
+                    "
+                  ></span>
+                  轧制中
+                </div>
+                <span class="kanban-count">6</span>
+              </div>
+              <div class="kanban-body">
+                <div class="order-card urgent">
+                  <div class="order-header">
+                    <div>
+                      <div class="order-id">SZ2601280123</div>
+                      <div class="order-customer">河北兴恒</div>
+                    </div>
+                    <span class="order-priority urgent">紧急</span>
+                  </div>
+                  <div class="order-specs">
+                    <span>📏 13μm × 872mm</span>
+                    <span>📦 25吨</span>
+                  </div>
+                  <div class="order-progress">
+                    <div class="progress-header">
+                      <span class="progress-label">生产进度</span>
+                      <span class="progress-value">32%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill danger"
+                        style="width: 32%"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="process-steps">
+                    <div class="process-step completed"></div>
+                    <div class="process-step current"></div>
+                    <div class="process-step"></div>
+                    <div class="process-step"></div>
+                    <div class="process-step"></div>
+                  </div>
+                  <div class="process-labels">
+                    <span>胚料</span><span>轧制</span><span>分切</span
+                    ><span>精切</span><span>包装</span>
+                  </div>
+                  <div class="order-footer">
+                    <div class="order-deadline urgent">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24">
+                        <path
+                          d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                        />
+                      </svg>
+                      02-05 仅剩1天!
+                    </div>
+                    <span class="order-qty">剩余 17吨</span>
+                  </div>
+                </div>
+                <div class="order-card">
+                  <div class="order-header">
+                    <div>
+                      <div class="order-id">SZ2601300456</div>
+                      <div class="order-customer">宁德时代</div>
+                    </div>
+                    <span class="order-priority normal">常规</span>
+                  </div>
+                  <div class="order-specs">
+                    <span>📏 15μm × 1200mm</span>
+                    <span>📦 30吨</span>
+                  </div>
+                  <div class="order-progress">
+                    <div class="progress-header">
+                      <span class="progress-label">生产进度</span>
+                      <span class="progress-value">65%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-fill good" style="width: 65%"></div>
+                    </div>
+                  </div>
+                  <div class="order-footer">
+                    <div class="order-deadline normal">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      02-12 交期
+                    </div>
+                    <span class="order-qty">剩余 10.5吨</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 分切中 -->
+            <div class="kanban-column">
+              <div class="kanban-header">
+                <div class="kanban-title">
+                  <span
+                    style="
+                      width: 12px;
+                      height: 12px;
+                      border-radius: 3px;
+                      background: var(--accent-green);
+                    "
+                  ></span>
+                  分切中
+                </div>
+                <span class="kanban-count">5</span>
+              </div>
+              <div class="kanban-body">
+                <div class="order-card">
+                  <div class="order-header">
+                    <div>
+                      <div class="order-id">SZ2601250789</div>
+                      <div class="order-customer">弘力科技</div>
+                    </div>
+                    <span class="order-priority important">重要</span>
+                  </div>
+                  <div class="order-specs">
+                    <span>📏 15μm × 654mm</span>
+                    <span>📦 18吨</span>
+                  </div>
+                  <div class="order-progress">
+                    <div class="progress-header">
+                      <span class="progress-label">生产进度</span>
+                      <span class="progress-value">78%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-fill good" style="width: 78%"></div>
+                    </div>
+                  </div>
+                  <div class="order-footer">
+                    <div class="order-deadline normal">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      02-08 交期
+                    </div>
+                    <span class="order-qty">剩余 4吨</span>
+                  </div>
+                </div>
+                <div class="order-card warning">
+                  <div class="order-header">
+                    <div>
+                      <div class="order-id">SZ2601280234</div>
+                      <div class="order-customer">源元材料</div>
+                    </div>
+                    <span class="order-priority important">重要</span>
+                  </div>
+                  <div class="order-specs">
+                    <span>📏 10μm × 1340mm</span>
+                    <span>📦 22吨</span>
+                  </div>
+                  <div class="order-progress">
+                    <div class="progress-header">
+                      <span class="progress-label">生产进度</span>
+                      <span class="progress-value">45%</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div
+                        class="progress-fill warning"
+                        style="width: 45%"
+                      ></div>
+                    </div>
+                  </div>
+                  <div class="order-footer">
+                    <div class="order-deadline warning">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" />
+                        <polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      02-06 仅剩2天
+                    </div>
+                    <span class="order-qty">剩余 12吨</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 待发货 -->
+            <div class="kanban-column">
+              <div class="kanban-header">
+                <div class="kanban-title">
+                  <span
+                    style="
+                      width: 12px;
+                      height: 12px;
+                      border-radius: 3px;
+                      background: var(--accent-purple);
+                    "
+                  ></span>
+                  待发货
+                </div>
+                <span class="kanban-count">4</span>
+              </div>
+              <div class="kanban-body">
+                <div class="order-card">
+                  <div class="order-header">
+                    <div>
+                      <div class="order-id">SZ2601200567</div>
+                      <div class="order-customer">格力电器</div>
+                    </div>
+                    <span class="order-priority normal">常规</span>
+                  </div>
+                  <div class="order-specs">
+                    <span>📏 8μm × 500mm</span>
+                    <span>📦 10吨</span>
+                  </div>
+                  <div class="order-progress">
+                    <div class="progress-header">
+                      <span class="progress-label">生产进度</span>
+                      <span
+                        class="progress-value"
+                        style="color: var(--accent-green)"
+                        >100%</span
+                      >
+                    </div>
+                    <div class="progress-bar">
+                      <div class="progress-fill good" style="width: 100%"></div>
+                    </div>
+                  </div>
+                  <div class="order-footer">
+                    <div class="order-deadline normal">
+                      <svg class="icon icon-sm" viewBox="0 0 24 24">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      已完成包装
+                    </div>
+                    <span class="order-qty" style="color: var(--accent-green)"
+                      >✓ 10吨</span
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧面板 -->
+        <aside class="sidebar">
+          <!-- 实时统计 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div class="card-title-icon">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-cyan)"
+                  >
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </div>
+                今日实时
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="realtime-stats">
+                <div class="realtime-card">
+                  <div
+                    class="realtime-value"
+                    style="color: var(--accent-green)"
+                  >
+                    45.2
+                  </div>
+                  <div class="realtime-label">产量 (吨)</div>
+                  <div class="realtime-trend up">↑ 8.5% 较昨日</div>
+                </div>
+                <div class="realtime-card">
+                  <div class="realtime-value" style="color: var(--accent-cyan)">
+                    89%
+                  </div>
+                  <div class="realtime-label">设备OEE</div>
+                  <div class="realtime-trend up">↑ 2.1% 较昨日</div>
+                </div>
+                <div class="realtime-card">
+                  <div
+                    class="realtime-value"
+                    style="color: var(--accent-purple)"
+                  >
+                    156
+                  </div>
+                  <div class="realtime-label">在制品</div>
+                  <div class="realtime-trend down">↓ 3.2% 较昨日</div>
+                </div>
+                <div class="realtime-card">
+                  <div
+                    class="realtime-value"
+                    style="color: var(--accent-orange)"
+                  >
+                    2.3
+                  </div>
+                  <div class="realtime-label">平均周期(天)</div>
+                  <div class="realtime-trend up">↑ 优化中</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 交期日历 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div class="card-title-icon">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-cyan)"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                  </svg>
+                </div>
+                交期日历
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="calendar-mini">
+                <div class="calendar-header">
+                  <span class="calendar-title">2026年 2月</span>
+                  <div class="calendar-nav">
+                    <button>‹</button>
+                    <button>›</button>
+                  </div>
+                </div>
+                <div class="calendar-grid">
+                  <div class="calendar-weekday">日</div>
+                  <div class="calendar-weekday">一</div>
+                  <div class="calendar-weekday">二</div>
+                  <div class="calendar-weekday">三</div>
+                  <div class="calendar-weekday">四</div>
+                  <div class="calendar-weekday">五</div>
+                  <div class="calendar-weekday">六</div>
+                  <div class="calendar-day other-month">26</div>
+                  <div class="calendar-day other-month">27</div>
+                  <div class="calendar-day other-month">28</div>
+                  <div class="calendar-day other-month">29</div>
+                  <div class="calendar-day other-month">30</div>
+                  <div class="calendar-day other-month">31</div>
+                  <div class="calendar-day">1</div>
+                  <div class="calendar-day">2</div>
+                  <div class="calendar-day">3</div>
+                  <div class="calendar-day today">4</div>
+                  <div class="calendar-day has-deadline urgent">5</div>
+                  <div class="calendar-day has-deadline">6</div>
+                  <div class="calendar-day has-deadline">7</div>
+                  <div class="calendar-day has-deadline">8</div>
+                  <div class="calendar-day">9</div>
+                  <div class="calendar-day">10</div>
+                  <div class="calendar-day">11</div>
+                  <div class="calendar-day has-deadline">12</div>
+                  <div class="calendar-day">13</div>
+                  <div class="calendar-day">14</div>
+                  <div class="calendar-day has-deadline">15</div>
+                  <div class="calendar-day">16</div>
+                  <div class="calendar-day">17</div>
+                  <div class="calendar-day">18</div>
+                  <div class="calendar-day">19</div>
+                  <div class="calendar-day has-deadline">20</div>
+                  <div class="calendar-day">21</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 交期预警 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div
+                  class="card-title-icon"
+                  style="background: rgba(255, 71, 87, 0.15)"
+                >
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-red)"
+                  >
+                    <path
+                      d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                    />
+                  </svg>
+                </div>
+                交期预警
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="deadline-list">
+                <div class="deadline-item overdue">
+                  <div class="deadline-date">
+                    <div class="deadline-day" style="color: var(--accent-red)">
+                      05
+                    </div>
+                    <div class="deadline-month">2月</div>
+                  </div>
+                  <div class="deadline-info">
+                    <div class="deadline-order">SZ2601280123</div>
+                    <div class="deadline-customer">河北兴恒 · 剩余17吨</div>
+                    <div class="deadline-status">⚠️ 仅剩1天，进度32%</div>
+                  </div>
+                </div>
+                <div class="deadline-item today">
+                  <div class="deadline-date">
+                    <div
+                      class="deadline-day"
+                      style="color: var(--accent-orange)"
+                    >
+                      06
+                    </div>
+                    <div class="deadline-month">2月</div>
+                  </div>
+                  <div class="deadline-info">
+                    <div class="deadline-order">SZ2601280234</div>
+                    <div class="deadline-customer">源元材料 · 剩余12吨</div>
+                    <div class="deadline-status">⏰ 仅剩2天，进度45%</div>
+                  </div>
+                </div>
+                <div class="deadline-item soon">
+                  <div class="deadline-date">
+                    <div class="deadline-day" style="color: var(--accent-cyan)">
+                      07
+                    </div>
+                    <div class="deadline-month">2月</div>
+                  </div>
+                  <div class="deadline-info">
+                    <div class="deadline-order">SZ2602040001</div>
+                    <div class="deadline-customer">天能电池 · 15吨</div>
+                    <div class="deadline-status">📋 待排产</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", function () {
+          document
+            .querySelectorAll(".nav-item")
+            .forEach((i) => i.classList.remove("active"));
+          this.classList.add("active");
+        });
+      });
+      document.querySelectorAll(".order-card").forEach((card) => {
+        card.addEventListener("click", function () {
+          // 可扩展：点击查看订单详情
+        });
+      });
+      // 进度条动画
+      document.querySelectorAll(".progress-fill").forEach((fill) => {
+        const width = fill.style.width;
+        fill.style.width = "0";
+        setTimeout(() => {
+          fill.style.width = width;
+        }, 300);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,621 @@
+/* ========================================
+ * 排产辅助功能Demo - Arco Design 风格
+ * 主题：干净、现代、专业
+ * ======================================== */
+
+:root {
+    --color-bg-1: #f2f3f5;
+    --color-bg-2: #ffffff;
+    --color-bg-3: #ffffff;
+    
+    --primary-6: #165dff; /* Arco Blue */
+    --primary-5: #4080ff;
+    --primary-7: #0e42d2;
+    --primary-1: #e8f3ff;
+    
+    --success-6: #00b42a;
+    --warning-6: #ff7d00;
+    --danger-6: #f53f3f;
+    
+    --color-text-1: #1d2129; /* 标题 */
+    --color-text-2: #4e5969; /* 正文 */
+    --color-text-3: #86909c; /* 辅助 */
+    --color-border: #e5e6eb;
+    
+    --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+body {
+    background-color: var(--color-bg-1);
+    color: var(--color-text-1);
+    font-family: var(--font-family);
+    margin: 0;
+    padding: 24px;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+}
+
+.container {
+    width: 100%;
+    max-width: 1300px;
+    background: var(--color-bg-2);
+    border-radius: 8px; /* 大圆角 */
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); /* 弥散阴影 */
+    overflow: hidden; /* 防止溢出 */
+    display: flex;
+    flex-direction: column;
+}
+
+/* ========================================
+ * 顶部导航栏 (模拟真实系统)
+ * ======================================== */
+.header {
+    height: 60px;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    background: var(--color-bg-2);
+}
+
+.header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    width: 24px;
+    height: 24px;
+    background: var(--primary-6);
+    border-radius: 4px;
+}
+
+.demo-badge {
+    font-size: 12px;
+    background: var(--primary-1);
+    color: var(--primary-6);
+    padding: 2px 8px;
+    border-radius: 2px;
+    font-weight: 500;
+}
+
+/* ========================================
+ * 主体布局 (修复滚动条问题)
+ * ======================================== */
+.main-wrapper {
+    display: flex;
+    flex: 1;
+    overflow: hidden; /* 禁止外层滚动 */
+    height: calc(100vh - 60px); /* 减去头部高度 */
+}
+
+/* 左侧栏 - 侧边栏风格 */
+.left-panel {
+    width: 320px; /*稍微收窄一点*/
+    min-width: 320px;
+    background: #ffffff;
+    border-right: 1px solid var(--color-border);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto; /* 仅允许垂直滚动 */
+    overflow-x: hidden; /* 严禁水平滚动 */
+    box-shadow: 2px 0 8px rgba(0,0,0,0.02);
+    z-index: 10;
+}
+
+/* 右侧栏 - 内容区 */
+.right-panel {
+    flex: 1;
+    padding: 24px 32px;
+    overflow-y: auto;
+    background: #f7f8fa; /* 让右侧有区别 */
+}
+
+/* ========================================
+ * 步骤条 (紧凑优化版)
+ * 防止水平溢出
+ * ======================================== */
+.steps {
+    display: flex;
+    justify-content: space-between; /* 两端对齐，不硬撑宽度 */
+    margin-bottom: 24px;
+    padding: 0 4px;
+}
+
+.step {
+    display: flex;
+    flex-direction: column; /* 上下结构更省宽度 */
+    align-items: center;
+    position: relative;
+    flex: 1;
+    margin: 0; /* 去掉margin-right */
+}
+
+/* 连接线调整 */
+.step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    width: 100%; /* 连接到下一个 */
+    height: 1px;
+    background: var(--color-border);
+    z-index: 0;
+}
+
+.step .number {
+    width: 20px;
+    height: 20px;
+    font-size: 11px;
+    margin-right: 0; /* 上下结构不需要右边距 */
+    margin-bottom: 4px;
+    z-index: 1; /* 盖住线 */
+    background: #fff; /* 背景遮挡线条 */
+    border: 1px solid var(--color-border);
+    color: var(--color-text-3);
+}
+
+.step.active .number {
+    border-color: var(--primary-6);
+    background: var(--primary-6);
+    color: #fff;
+}
+
+.step .text {
+    font-size: 12px;
+    color: var(--color-text-3);
+    white-space: nowrap; /* 防止换行 */
+}
+
+.step.active .text {
+    color: var(--primary-6);
+    font-weight: 500;
+}
+
+/* ========================================
+ * 卡片组件
+ * ======================================== */
+.card {
+    background: var(--color-bg-2);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 16px; /* 紧凑 */
+    margin-bottom: 16px;
+    transition: all 0.2s;
+}
+
+.card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05); /* 悬浮效果 */
+    border-color: var(--primary-1);
+}
+
+.card-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--color-text-1);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.card-title::before {
+    content: '';
+    width: 3px;
+    height: 14px;
+    background: var(--primary-6);
+    border-radius: 2px;
+}
+
+.card-title .icon { display: none; } /* 隐藏原来的icon */
+
+/* ========================================
+ * 输入框
+ * ======================================== */
+.input-group label {
+    font-size: 13px;
+    color: var(--color-text-2);
+    margin-bottom: 8px;
+    display: block;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.input-group input:hover {
+    border-color: var(--primary-5);
+}
+
+.input-group input:focus {
+    border-color: var(--primary-6);
+    outline: none;
+    box-shadow: 0 0 0 2px var(--primary-1);
+}
+
+/* ========================================
+ * 按钮
+ * ======================================== */
+.btn {
+    border: none;
+    border-radius: 4px;
+    padding: 6px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-primary {
+    background: var(--primary-6);
+    color: #fff;
+}
+.btn-primary:hover { background: var(--primary-5); }
+
+.btn-success {
+    background: var(--success-6);
+    color: #fff;
+}
+.btn-success:hover { background: #009a29; }
+
+.btn-secondary {
+    background: #f2f3f5;
+    color: var(--color-text-1);
+}
+.btn-secondary:hover { background: #e5e6eb; }
+
+/* ========================================
+ * 信息展示
+ * ======================================== */
+.info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    background: #f7f8fa;
+    padding: 12px;
+    border-radius: 4px;
+}
+
+.info-item .label {
+    font-size: 12px;
+    color: var(--color-text-3);
+    margin-bottom: 2px;
+}
+
+.info-item .value {
+    font-size: 13px;
+    color: var(--color-text-1);
+    font-weight: 500;
+}
+
+/* ========================================
+ * 2. 修复评审信息样式
+ * ======================================== */
+.review-info {
+    margin-top: 16px;
+    border: 1px solid #fff7e6;
+    background: #fffbef; /* 暖色背景 */
+    padding: 12px;
+    border-radius: 4px;
+}
+
+.defect-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.defect-list li {
+    font-size: 13px;
+    padding: 8px 0;
+    border-bottom: 1px dashed #ffece0;
+}
+.defect-list li:last-child { border: none; }
+
+.defect-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+}
+
+.defect-type {
+    font-weight: 600;
+    color: var(--color-text-1);
+}
+
+.defect-badge {
+    font-size: 11px;
+    padding: 0 4px;
+    border-radius: 2px;
+}
+.defect-badge.edge { color: #ff7d00; background: #fff7e8; border: 1px solid #ff7d00; }
+.defect-badge.head { color: #f53f3f; background: #feece8; border: 1px solid #f53f3f; }
+
+.defect-detail {
+    color: var(--color-text-2);
+    font-size: 12px;
+}
+
+.highlight-text {
+    color: var(--primary-6);
+    font-weight: 600;
+}
+
+/* ========================================
+ * 尺寸输入
+ * ======================================== */
+.size-input-section {
+    margin-top: 20px;
+}
+
+.size-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.size-row .label {
+    width: 60px;
+    font-size: 13px;
+    color: var(--color-text-2);
+}
+
+.size-row input {
+    flex: 1;
+    text-align: right;
+    font-family: 'Consolas', monospace;
+    font-weight: 500;
+}
+
+.size-row .unit {
+    margin-left: 8px;
+    font-size: 12px;
+    color: var(--color-text-3);
+    width: 20px;
+}
+
+/* 有效尺寸高亮 */
+#effectiveWidth, #effectiveLength {
+    border-color: var(--success-6);
+    background: #eafff1;
+    color: var(--success-6);
+}
+
+/* ========================================
+ * 切割可视化
+ * ======================================== */
+.cutting-visual {
+    background: #fff;
+    margin-bottom: 24px;
+}
+
+.cutting-bar {
+    height: 48px; /* 更精致 */
+    background: #f2f3f5;
+    border: 1px solid var(--color-border);
+    border-radius: 2px;
+    display: flex;
+    overflow: hidden;
+    margin-top: 12px;
+}
+
+.cutting-segment {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: #fff;
+    position: relative;
+    border-right: 1px solid rgba(255,255,255,0.2);
+    transition: width 0.4s ease;
+}
+
+.cutting-segment .width { font-size: 13px; font-weight: 600; }
+.cutting-segment .order { font-size: 11px; opacity: 0.9; }
+
+.s1 { background: var(--primary-6); }
+.s2 { background: var(--success-6); }
+.s3 { background: #722ed1; } /* 紫色 */
+.s4 { background: #ff7d00; } /* 橙色 */
+.waste { background:repeating-linear-gradient(45deg,#f2f3f5,#f2f3f5 5px,#e5e6eb 5px,#e5e6eb 10px); color: var(--color-text-3) !important; }
+
+.cutting-segment.waste .width, .cutting-segment.waste .order { color: var(--color-text-3); }
+
+/* ========================================
+ * 3. 修复筛选与推荐列表
+ * ======================================== */
+.filter-section {
+    padding: 16px;
+    background: var(--primary-1);
+    border: 1px dashed var(--primary-5);
+    border-radius: 4px;
+    margin-bottom: 24px;
+}
+
+.filter-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.order-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.order-tab {
+    padding: 6px 12px;
+    font-size: 13px;
+    background: #fff;
+    border: 1px solid var(--color-border);
+    border-radius: 100px; /* 胶囊状 */
+    cursor: pointer;
+    color: var(--color-text-2);
+}
+
+.order-tab.active {
+    background: var(--primary-6);
+    color: #fff;
+    border-color: var(--primary-6);
+}
+
+/* ========================================
+ * 订单表格
+ * ======================================== */
+.order-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.order-table th {
+    text-align: left;
+    background: #f7f8fa;
+    color: var(--color-text-2);
+    font-size: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.order-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13px;
+}
+
+.order-table .order-no {
+    color: var(--primary-6);
+    font-family: 'Consolas', monospace;
+}
+
+.lock-btn {
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 2px;
+    border: 1px solid var(--color-border);
+    background: #fff;
+    cursor: pointer;
+}
+.lock-btn:hover { border-color: var(--primary-6); color: var(--primary-6); }
+.lock-btn.locked { background: var(--success-6); color: #fff; border-color: var(--success-6); }
+
+/* ========================================
+ * 工具类
+ * ======================================== */
+.hidden { display: none !important; }
+.tooltip { margin-top: 8px; font-size: 12px; color: var(--color-text-3); }
+
+/* ========================================
+ * 3. 新增：订单池与复选框样式
+ * ======================================== */
+
+/* 紧急订单行高亮 */
+.order-table tr.urgent-row {
+    background: #fff7e6;
+}
+
+.order-table tr.urgent-row:hover {
+    background: #fff3d9;
+}
+
+/* 复选框美化 */
+.order-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--primary-6);
+    cursor: pointer;
+}
+
+/* 利用率徽章 */
+.utilization-badge {
+    margin-left: auto;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--success-6);
+    background: #eafff1;
+    padding: 4px 12px;
+    border-radius: 4px;
+    border: 1px solid #b7eb8f;
+}
+
+/* 结果汇总样式 */
+.result-summary span {
+    color: var(--primary-6);
+    font-weight: 600;
+    margin: 0 2px;
+}
+
+/* 表格内订单号等宽字体 */
+.order-table .order-no {
+    font-family: 'JetBrains Mono', Consolas, monospace;
+    color: var(--primary-6);
+}
+
+/* 交期紧急高亮 */
+.order-table .deadline.urgent {
+    color: #f53f3f;
+    font-weight: 600;
+}
+
+/* 禁用按钮样式 */
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 卡片标题图标 */
+.card-title::before {
+    display: none; /* 移除竖线，用emoji代替 */
+}
+
+/* ========================================
+ * 4. 匹配条件标签样式
+ * ======================================== */
+.match-conditions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: #f0f5ff;
+    border: 1px solid #adc6ff;
+    border-radius: 4px;
+}
+
+.match-label {
+    font-size: 13px;
+    color: #4e5969;
+    font-weight: 500;
+}
+
+.match-tags {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.match-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #165dff;
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+}

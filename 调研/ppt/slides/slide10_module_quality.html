@@ -1,0 +1,190 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      html {
+        background: #F8F9FA;
+      }
+      body {
+        width: 720pt;
+        height: 405pt;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        display: flex;
+        background: #f8f9fa;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50pt;
+        background: #1e3a5f;
+        display: flex;
+        align-items: center;
+        padding: 0 35pt;
+      }
+      .header-badge {
+        background: #2ecc71;
+        padding: 4pt 10pt;
+        border-radius: 3pt;
+      }
+      .badge-text {
+        font-size: 10pt;
+        font-weight: bold;
+        margin: 0;
+        color: #ffffff;
+      }
+      .header h1 {
+        color: #ffffff;
+        font-size: 16pt;
+        font-weight: bold;
+        margin: 0 0 0 12pt;
+      }
+      .main {
+        margin-top: 55pt;
+        padding: 10pt 35pt;
+        display: flex;
+        gap: 15pt;
+        box-sizing: border-box;
+      }
+      .left-panel {
+        flex: 1;
+      }
+      .right-panel {
+        flex: 1;
+      }
+      .feature-card {
+        background: #F8F9FA;
+        border-radius: 5pt;
+        padding: 12pt;
+        box-shadow: 0 2pt 5pt rgba(0, 0, 0, 0.06);
+      }
+      .card-title {
+        color: #1e3a5f;
+        font-size: 12pt;
+        font-weight: bold;
+        margin: 0 0 6pt 0;
+      }
+      .title-bar {
+        width: 35pt;
+        height: 2pt;
+        background: #2ecc71;
+        margin-bottom: 10pt;
+      }
+      .feature-item {
+        margin-bottom: 6pt;
+      }
+      .feature-item p {
+        color: #444444;
+        font-size: 9pt;
+        margin: 0;
+        line-height: 1.4;
+      }
+      .example-card {
+        background: #F8F9FA;
+        border-radius: 5pt;
+        padding: 12pt;
+        box-shadow: 0 2pt 5pt rgba(0, 0, 0, 0.06);
+      }
+      .example-title {
+        color: #1e3a5f;
+        font-size: 11pt;
+        font-weight: bold;
+        margin: 0 0 10pt 0;
+      }
+      .example-header {
+        display: flex;
+        background: #f0f0f0;
+        padding: 5pt 8pt;
+        border-radius: 3pt;
+        margin-bottom: 3pt;
+      }
+      .example-header p {
+        flex: 1;
+        color: #666666;
+        font-size: 8pt;
+        font-weight: bold;
+        margin: 0;
+      }
+      .example-row {
+        display: flex;
+        padding: 5pt 8pt;
+        border-bottom: 1pt solid #eeeeee;
+      }
+      .example-row p {
+        flex: 1;
+        color: #444444;
+        font-size: 8pt;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-badge"><p class="badge-text">解决方案</p></div>
+      <h1>质量模块：解决评审不规范与传递断链</h1>
+    </div>
+    <div class="main">
+      <div class="left-panel">
+        <div class="feature-card">
+          <p class="card-title">核心功能</p>
+          <div class="title-bar"></div>
+          <div class="feature-item">
+            <p><b>结构化录入</b>：缺陷类型、位置、处理方式采用下拉选择</p>
+          </div>
+          <div class="feature-item">
+            <p><b>流程卡点</b>：评审完成后才能进入下道工序报工</p>
+          </div>
+          <div class="feature-item">
+            <p><b>实时同步</b>：评审完成后计划员/包装立即可见</p>
+          </div>
+          <div class="feature-item">
+            <p><b>权限分级</b>：轻微问题当班生效，降级/报废需工程师确认</p>
+          </div>
+          <div class="feature-item">
+            <p><b>辅助展示</b>：自动显示客户要求及历史案例参考</p>
+          </div>
+        </div>
+      </div>
+      <div class="right-panel">
+        <div class="example-card">
+          <p class="example-title">结构化录入示例</p>
+          <div class="example-header">
+            <p>字段</p>
+            <p>录入方式</p>
+            <p>示例值</p>
+          </div>
+          <div class="example-row">
+            <p>缺陷类型</p>
+            <p>下拉选择</p>
+            <p>针孔</p>
+          </div>
+          <div class="example-row">
+            <p>位置-侧</p>
+            <p>下拉选择</p>
+            <p>Q侧</p>
+          </div>
+          <div class="example-row">
+            <p>位置-起始</p>
+            <p>数值输入</p>
+            <p>890mm</p>
+          </div>
+          <div class="example-row">
+            <p>位置-终止</p>
+            <p>数值输入</p>
+            <p>990mm</p>
+          </div>
+          <div class="example-row">
+            <p>处理方式</p>
+            <p>下拉选择</p>
+            <p>切除</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>质量模块 - 评审管理 | 铝箔MES系统</title>
+    <meta
+      name="description"
+      content="结构化质量评审录入，评审信息自动同步到各环节"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles/theme.css" />
+    <style>
+      .content-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 24px;
+      }
+
+      /* 左侧待评审列表 */
+      .review-queue {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        max-height: calc(100vh - 180px);
+        overflow-y: auto;
+      }
+      .review-queue::-webkit-scrollbar {
+        width: 6px;
+      }
+      .review-queue::-webkit-scrollbar-thumb {
+        background: var(--border-subtle);
+        border-radius: 3px;
+      }
+
+      .queue-item {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 16px;
+        border: 1px solid var(--border-subtle);
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .queue-item:hover {
+        border-color: var(--border-glow);
+      }
+      .queue-item.active {
+        border-color: var(--accent-cyan);
+        background: rgba(0, 212, 255, 0.1);
+      }
+      .queue-item.active::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: var(--accent-cyan);
+        border-radius: 3px 0 0 3px;
+      }
+      .queue-item {
+        position: relative;
+      }
+
+      .queue-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 10px;
+      }
+      .queue-title {
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .queue-process {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+      }
+      .queue-process.rolling {
+        background: rgba(0, 212, 255, 0.15);
+        color: var(--accent-cyan);
+      }
+      .queue-process.slitting {
+        background: rgba(0, 255, 136, 0.15);
+        color: var(--accent-green);
+      }
+      .queue-process.finishing {
+        background: rgba(255, 149, 0, 0.15);
+        color: var(--accent-orange);
+      }
+
+      .queue-info {
+        display: flex;
+        gap: 12px;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+      .queue-status {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+      }
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+      }
+      .status-dot.pending {
+        background: var(--accent-orange);
+        animation: pulse 2s infinite;
+      }
+      .status-dot.urgent {
+        background: var(--accent-red);
+        animation: pulse 1s infinite;
+      }
+
+      /* 右侧评审详情 */
+      .review-detail {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .detail-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+      }
+      .detail-title-section h2 {
+        font-size: 20px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .detail-meta {
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      .detail-actions {
+        display: flex;
+        gap: 10px;
+      }
+      .action-btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .action-btn.pass {
+        background: linear-gradient(135deg, var(--accent-green), #00cc6a);
+        color: var(--primary-dark);
+      }
+      .action-btn.reject {
+        background: rgba(255, 71, 87, 0.15);
+        color: var(--accent-red);
+        border: 1px solid rgba(255, 71, 87, 0.3);
+      }
+      .action-btn.concession {
+        background: rgba(255, 149, 0, 0.15);
+        color: var(--accent-orange);
+        border: 1px solid rgba(255, 149, 0, 0.3);
+      }
+
+      /* 质检数据卡片 */
+      .inspection-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+      }
+      .inspection-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+        border: 1px solid var(--border-subtle);
+      }
+      .inspection-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .inspection-title {
+        font-size: 14px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .inspection-badge {
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+      }
+      .inspection-badge.ok {
+        background: rgba(0, 255, 136, 0.15);
+        color: var(--accent-green);
+      }
+      .inspection-badge.warning {
+        background: rgba(255, 149, 0, 0.15);
+        color: var(--accent-orange);
+      }
+      .inspection-badge.fail {
+        background: rgba(255, 71, 87, 0.15);
+        color: var(--accent-red);
+      }
+
+      .inspection-data {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .data-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 12px;
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+      }
+      .data-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .data-value {
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .data-value.good {
+        color: var(--accent-green);
+      }
+      .data-value.warn {
+        color: var(--accent-orange);
+      }
+      .data-value.bad {
+        color: var(--accent-red);
+      }
+
+      /* 结构化录入表单 */
+      .form-section {
+        margin-top: 8px;
+      }
+      .form-title {
+        font-size: 14px;
+        font-weight: 600;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 1px solid var(--border-subtle);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .form-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+
+      .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .form-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .form-label .required {
+        color: var(--accent-red);
+      }
+
+      .form-input,
+      .form-select,
+      .form-textarea {
+        padding: 12px 16px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-primary);
+        font-size: 14px;
+        transition: all 0.3s;
+        font-family: inherit;
+      }
+      .form-input:focus,
+      .form-select:focus,
+      .form-textarea:focus {
+        outline: none;
+        border-color: var(--accent-cyan);
+        box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+      }
+      .form-select {
+        cursor: pointer;
+      }
+      .form-textarea {
+        min-height: 80px;
+        resize: vertical;
+      }
+
+      /* 缺陷选择器 - 结构化录入核心 */
+      .defect-selector {
+        margin-top: 20px;
+      }
+      .defect-categories {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+      }
+      .defect-category {
+        padding: 8px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--border-subtle);
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .defect-category:hover {
+        border-color: var(--border-glow);
+      }
+      .defect-category.active {
+        background: rgba(0, 212, 255, 0.15);
+        border-color: var(--accent-cyan);
+        color: var(--accent-cyan);
+      }
+
+      .defect-options {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .defect-option {
+        padding: 12px;
+        border-radius: 8px;
+        background: rgba(0, 0, 0, 0.2);
+        border: 1px solid var(--border-subtle);
+        cursor: pointer;
+        text-align: center;
+        font-size: 13px;
+        transition: all 0.3s;
+      }
+      .defect-option:hover {
+        border-color: var(--border-glow);
+        background: rgba(0, 212, 255, 0.05);
+      }
+      .defect-option.selected {
+        background: rgba(255, 71, 87, 0.1);
+        border-color: var(--accent-red);
+        color: var(--accent-red);
+      }
+
+      .selected-defects {
+        margin-top: 16px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .defect-tag {
+        padding: 6px 12px;
+        border-radius: 6px;
+        background: rgba(255, 71, 87, 0.15);
+        color: var(--accent-red);
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .defect-tag .remove {
+        cursor: pointer;
+        opacity: 0.7;
+      }
+      .defect-tag .remove:hover {
+        opacity: 1;
+      }
+
+      /* 历史评审记录 */
+      .history-timeline {
+        margin-top: 20px;
+      }
+      .timeline-item {
+        display: flex;
+        gap: 16px;
+        padding: 16px 0;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+      .timeline-item:last-child {
+        border-bottom: none;
+      }
+      .timeline-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-top: 4px;
+        flex-shrink: 0;
+      }
+      .timeline-dot.pass {
+        background: var(--accent-green);
+      }
+      .timeline-dot.reject {
+        background: var(--accent-red);
+      }
+      .timeline-dot.concession {
+        background: var(--accent-orange);
+      }
+      .timeline-content {
+        flex: 1;
+      }
+      .timeline-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 6px;
+      }
+      .timeline-title {
+        font-size: 14px;
+        font-weight: 500;
+      }
+      .timeline-time {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .timeline-desc {
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      @media (max-width: 1200px) {
+        .content-layout {
+          grid-template-columns: 1fr;
+        }
+        .inspection-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+      @media (max-width: 768px) {
+        .inspection-grid {
+          grid-template-columns: 1fr;
+        }
+        .defect-options {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="top-nav">
+      <div class="logo-section">
+        <div class="logo-icon">M</div>
+        <span class="logo-text">MOSES智能管理系统</span>
+      </div>
+      <div class="nav-menu">
+        <div class="nav-item">排产管理</div>
+        <div class="nav-item active">质量评审</div>
+        <div class="nav-item">物料追踪</div>
+        <div class="nav-item">生产执行</div>
+      </div>
+      <div class="user-section">
+        <div class="notification-btn">
+          <svg class="icon" viewBox="0 0 24 24">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <div class="notification-badge"></div>
+        </div>
+        <div class="user-avatar">李</div>
+      </div>
+    </nav>
+
+    <main class="main-container">
+      <header class="page-header">
+        <div class="page-title-section">
+          <h1>质量评审管理</h1>
+          <p class="page-subtitle">
+            结构化数据录入 · 评审信息自动同步 · 解决"描述不统一"问题
+          </p>
+        </div>
+        <div style="display: flex; gap: 12px">
+          <button class="btn btn-secondary">
+            <svg class="icon icon-sm" viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            导出报表
+          </button>
+          <button class="btn btn-primary">
+            <svg class="icon icon-sm" viewBox="0 0 24 24">
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            查询记录
+          </button>
+        </div>
+      </header>
+
+      <!-- 统计卡片 -->
+      <section class="stats-grid" style="grid-template-columns: repeat(5, 1fr)">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-orange),
+                  #cc7700
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">8</div>
+          <div class="stat-label">待评审</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-green),
+                  #00cc6a
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">45</div>
+          <div class="stat-label">今日通过</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(135deg, var(--accent-red), #cc3a47);
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">3</div>
+          <div class="stat-label">今日不合格</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-purple),
+                  #8b5cf6
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <path
+                  d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">5</div>
+          <div class="stat-label">让步放行</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-cyan),
+                  #0099cc
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <line x1="18" y1="20" x2="18" y2="10" />
+                <line x1="12" y1="20" x2="12" y2="4" />
+                <line x1="6" y1="20" x2="6" y2="14" />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">93.8%</div>
+          <div class="stat-label">合格率</div>
+        </div>
+      </section>
+
+      <div class="content-layout">
+        <!-- 左侧待评审队列 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div
+                class="card-title-icon"
+                style="background: rgba(255, 149, 0, 0.15)"
+              >
+                <svg
+                  class="icon"
+                  viewBox="0 0 24 24"
+                  stroke="var(--accent-orange)"
+                >
+                  <path
+                    d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                  />
+                  <polyline points="14 2 14 8 20 8" />
+                </svg>
+              </div>
+              待评审队列
+            </div>
+            <span style="font-size: 12px; color: var(--text-muted)">8 项</span>
+          </div>
+          <div class="card-body">
+            <div class="review-queue">
+              <div class="queue-item active">
+                <div class="queue-header">
+                  <span class="queue-title">F2601301-A</span>
+                  <span class="queue-process slitting">分切</span>
+                </div>
+                <div class="queue-info">
+                  <span>13μm × 872mm</span>
+                  <span>河北兴恒</span>
+                </div>
+                <div class="queue-status">
+                  <span class="status-dot urgent"></span>
+                  <span style="color: var(--accent-red)"
+                    >紧急 · 等待45分钟</span
+                  >
+                </div>
+              </div>
+              <div class="queue-item">
+                <div class="queue-header">
+                  <span class="queue-title">F2601303-B</span>
+                  <span class="queue-process rolling">轧机</span>
+                </div>
+                <div class="queue-info">
+                  <span>15μm × 654mm</span>
+                  <span>弘力科技</span>
+                </div>
+                <div class="queue-status">
+                  <span class="status-dot pending"></span>
+                  <span>等待20分钟</span>
+                </div>
+              </div>
+              <div class="queue-item">
+                <div class="queue-header">
+                  <span class="queue-title">J2601205-C</span>
+                  <span class="queue-process finishing">精切</span>
+                </div>
+                <div class="queue-info">
+                  <span>10μm × 320mm</span>
+                  <span>源元材料</span>
+                </div>
+                <div class="queue-status">
+                  <span class="status-dot pending"></span>
+                  <span>等待15分钟</span>
+                </div>
+              </div>
+              <div class="queue-item">
+                <div class="queue-header">
+                  <span class="queue-title">F2601304-A</span>
+                  <span class="queue-process slitting">分切</span>
+                </div>
+                <div class="queue-info">
+                  <span>12μm × 500mm</span>
+                  <span>天能电池</span>
+                </div>
+                <div class="queue-status">
+                  <span class="status-dot pending"></span>
+                  <span>等待10分钟</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧评审详情 -->
+        <div class="review-detail">
+          <div class="detail-header">
+            <div class="detail-title-section">
+              <h2>F2601301-A 质量评审</h2>
+              <div class="detail-meta">
+                分切工序 · 母卷号 Y2601298 · 河北兴恒 · 13μm × 872mm × 6200m
+              </div>
+            </div>
+            <div class="detail-actions">
+              <button class="action-btn concession">让步放行</button>
+              <button class="action-btn reject">判定不合格</button>
+              <button class="action-btn pass">
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+                通过评审
+              </button>
+            </div>
+          </div>
+
+          <!-- 检测数据 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div class="card-title-icon">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-cyan)"
+                  >
+                    <path
+                      d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                    />
+                  </svg>
+                </div>
+                检测数据
+              </div>
+              <span style="font-size: 12px; color: var(--text-muted)"
+                >数据来源：设备自动采集 + 人工录入</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="inspection-grid">
+                <div class="inspection-card">
+                  <div class="inspection-header">
+                    <span class="inspection-title">
+                      <svg
+                        class="icon icon-sm"
+                        viewBox="0 0 24 24"
+                        stroke="var(--accent-cyan)"
+                      >
+                        <circle cx="12" cy="12" r="10" />
+                        <line x1="12" y1="8" x2="12" y2="12" />
+                        <line x1="12" y1="16" x2="12.01" y2="16" />
+                      </svg>
+                      针检数据
+                    </span>
+                    <span class="inspection-badge warning">需关注</span>
+                  </div>
+                  <div class="inspection-data">
+                    <div class="data-row">
+                      <span class="data-label">A/B级针孔</span
+                      ><span class="data-value good">12个</span>
+                    </div>
+                    <div class="data-row">
+                      <span class="data-label">C/D级针孔</span
+                      ><span class="data-value warn">28个</span>
+                    </div>
+                    <div class="data-row">
+                      <span class="data-label">E级针孔</span
+                      ><span class="data-value good">3个</span>
+                    </div>
+                    <div class="data-row">
+                      <span class="data-label">密集型针孔</span
+                      ><span class="data-value bad">C0-25边部针孔密集</span>
+                    </div>
+                    <div class="data-row">
+                      <span class="data-label">纵向针孔密度</span
+                      ><span class="data-value warn">1.2个/米</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="inspection-card">
+                  <div class="inspection-header">
+                    <span class="inspection-title">
+                      <svg
+                        class="icon icon-sm"
+                        viewBox="0 0 24 24"
+                        stroke="var(--accent-green)"
+                      >
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                      </svg>
+                      表检数据
+                    </span>
+                    <span class="inspection-badge ok">正常</span>
+                  </div>
+                  <div class="inspection-data">
+                    <div class="data-row">
+                      <span class="data-label">油污</span
+                      ><span class="data-value good">无</span>
+                    </div>
+                    <div class="data-row">
+                      <span class="data-label">划伤</span
+                      ><span class="data-value good">轻微</span>
+                    </div>
+                    <div class="data-row">
+                      <span class="data-label">折痕</span
+                      ><span class="data-value good">无</span>
+                    </div>
+                    <div class="data-row">
+                      <span class="data-label">异物</span
+                      ><span class="data-value good">无</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="inspection-card">
+                  <div class="inspection-header">
+                    <span class="inspection-title">
+                      <svg
+                        class="icon icon-sm"
+                        viewBox="0 0 24 24"
+                        stroke="var(--accent-purple)"
+                      >
+                        <path
+                          d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8"
+                        />
+                      </svg>
+                      板型数据
+                    </span>
+                    <span class="inspection-badge ok">正常</span>
+                  </div>
+                  <div class="inspection-data">
+                    <div class="data-row">
+                      <span class="data-label">下榻量</span
+                      ><span class="data-value good">0.8mm</span>
+                    </div>
+                    <div class="data-row">
+                      <span class="data-label">数据来源</span
+                      ><span
+                        class="data-value"
+                        style="color: var(--text-secondary)"
+                        >离线板型仪</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 结构化评审录入 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div
+                  class="card-title-icon"
+                  style="background: rgba(255, 149, 0, 0.15)"
+                >
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-orange)"
+                  >
+                    <path
+                      d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                    />
+                    <path
+                      d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+                    />
+                  </svg>
+                </div>
+                结构化评审录入
+              </div>
+              <span style="font-size: 12px; color: var(--accent-orange)"
+                >💡 标准化录入解决"描述不统一"问题</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="form-section">
+              <div class="form-section" style="margin-top: 24px">
+                <div class="form-title">
+                  <svg
+                    class="icon icon-sm"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-green)"
+                  >
+                    <path
+                      d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+                    />
+                  </svg>
+                  处理指令（可添加多条）
+                </div>
+                <div
+                  style="
+                    background: rgba(0, 0, 0, 0.2);
+                    border-radius: 10px;
+                    padding: 16px;
+                    margin-bottom: 16px;
+                  "
+                >
+                  <div
+                    class="form-grid"
+                    style="grid-template-columns: repeat(3, 1fr); gap: 12px"
+                  >
+                    <div class="form-group">
+                      <label class="form-label">位置范围</label>
+                      <input
+                        type="text"
+                        class="form-input"
+                        placeholder="如：Q0-80 或 C0-40"
+                        value="C0-25"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">缺陷类型</label>
+                      <select class="form-select">
+                        <option value="">选择缺陷</option>
+                        <option value="pinhole" selected>针孔</option>
+                        <option value="roll-mark">辊印</option>
+                        <option value="air-channel">气道</option>
+                        <option value="oil-stain">油斑</option>
+                        <option value="white-stripe">白条</option>
+                        <option value="sag">下榻</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label class="form-label">处理方式</label>
+                      <select class="form-select">
+                        <option value="">选择处理方式</option>
+                        <option value="cut" selected>切除</option>
+                        <option value="avoid-white">避留白</option>
+                        <option value="downgrade">切二级品</option>
+                        <option value="reverse">反开</option>
+                        <option value="observe">下料观察</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div style="text-align: right; margin-top: 8px">
+                    <span
+                      style="
+                        font-size: 12px;
+                        color: var(--accent-cyan);
+                        cursor: pointer;
+                      "
+                      >+ 添加处理指令</span
+                    >
+                  </div>
+                </div>
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label class="form-label"
+                      >主评审结论 <span class="required">*</span></label
+                    >
+                    <select class="form-select">
+                      <option value="">请选择评审结论</option>
+                      <option value="concession" selected>让步放行</option>
+                      <option value="normal">正常分切/轧制</option>
+                      <option value="rework">改切</option>
+                      <option value="transfer">转精切</option>
+                      <option value="downgrade">改切二级品</option>
+                      <option value="scrap">扒废/报废</option>
+                      <option value="negotiate">沟通放行</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="form-label">传递对象备注</label>
+                    <select class="form-select">
+                      <option value="">选择传递对象</option>
+                      <option value="package" selected>包装备注</option>
+                      <option value="finishing">精切备注</option>
+                      <option value="slitting">分切备注</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="grid-column: 1 / -1">
+                    <label class="form-label">生成评审信息预览</label>
+                    <div
+                      style="
+                        padding: 12px 16px;
+                        background: rgba(0, 212, 255, 0.1);
+                        border: 1px solid var(--accent-cyan);
+                        border-radius: 8px;
+                        font-size: 14px;
+                        color: var(--accent-cyan);
+                      "
+                    >
+                      让步放行，包装备注：C0-25针孔切除
+                    </div>
+                  </div>
+                  <div class="form-group" style="grid-column: 1 / -1">
+                    <label class="form-label">补充说明（可选）</label>
+                    <textarea
+                      class="form-textarea"
+                      placeholder="如有特殊情况可在此补充说明..."
+                    ></textarea>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 历史评审记录 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div class="card-title-icon">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-cyan)"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                </div>
+                母卷评审历史
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="history-timeline">
+                <div class="timeline-item">
+                  <div class="timeline-dot pass"></div>
+                  <div class="timeline-content">
+                    <div class="timeline-header">
+                      <span class="timeline-title">轧机下线评审 - 合格</span>
+                      <span class="timeline-time">2026-02-03 14:30</span>
+                    </div>
+                    <div class="timeline-desc">评审人：张工 · 无缺陷</div>
+                  </div>
+                </div>
+                <div class="timeline-item">
+                  <div class="timeline-dot concession"></div>
+                  <div class="timeline-content">
+                    <div class="timeline-header">
+                      <span class="timeline-title">中间检查 - 让步放行</span>
+                      <span class="timeline-time">2026-02-03 10:15</span>
+                    </div>
+                    <div class="timeline-desc">
+                      评审人：李工 · 轻微边浪，不影响后续加工
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script>
+      document.querySelectorAll(".queue-item").forEach((item) => {
+        item.addEventListener("click", function () {
+          document
+            .querySelectorAll(".queue-item")
+            .forEach((i) => i.classList.remove("active"));
+          this.classList.add("active");
+        });
+      });
+      document.querySelectorAll(".defect-category").forEach((cat) => {
+        cat.addEventListener("click", function () {
+          document
+            .querySelectorAll(".defect-category")
+            .forEach((c) => c.classList.remove("active"));
+          this.classList.add("active");
+        });
+      });
+      document.querySelectorAll(".defect-option").forEach((opt) => {
+        opt.addEventListener("click", function () {
+          this.classList.toggle("selected");
+        });
+      });
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", function () {
+          document
+            .querySelectorAll(".nav-item")
+            .forEach((i) => i.classList.remove("active"));
+          this.classList.add("active");
+        });
+      });
+    </script>
+  </body>
+</html>

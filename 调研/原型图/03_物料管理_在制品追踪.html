@@ -1,0 +1,1013 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>物料管理 - 在制品追踪 | 铝箔MES系统</title>
+    <meta name="description" content="在制品实时可视，位置可查，呆滞预警" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles/theme.css" />
+    <style>
+      .content-grid {
+        display: grid;
+        grid-template-columns: 1fr 380px;
+        gap: 24px;
+      }
+
+      /* 库位地图 */
+      .warehouse-map {
+        position: relative;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 12px;
+        padding: 24px;
+        min-height: 500px;
+      }
+      .map-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+      }
+      .map-title {
+        font-size: 16px;
+        font-weight: 600;
+      }
+      .map-legend {
+        display: flex;
+        gap: 16px;
+        font-size: 12px;
+      }
+      .legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .legend-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+      }
+      .legend-dot.empty {
+        background: rgba(139, 163, 199, 0.3);
+        border: 1px dashed var(--text-muted);
+      }
+      .legend-dot.normal {
+        background: var(--accent-green);
+      }
+      .legend-dot.warning {
+        background: var(--accent-orange);
+      }
+      .legend-dot.overdue {
+        background: var(--accent-red);
+      }
+
+      .warehouse-grid {
+        display: grid;
+        grid-template-columns: repeat(10, 1fr);
+        gap: 8px;
+      }
+      .warehouse-row-label {
+        grid-column: 1 / -1;
+        font-size: 12px;
+        color: var(--text-muted);
+        margin-top: 12px;
+        margin-bottom: 4px;
+        padding-left: 4px;
+      }
+
+      .slot {
+        aspect-ratio: 1;
+        border-radius: 6px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+      }
+      .slot.empty {
+        background: rgba(139, 163, 199, 0.1);
+        border: 1px dashed rgba(139, 163, 199, 0.3);
+      }
+      .slot.normal {
+        background: rgba(0, 255, 136, 0.2);
+        border: 1px solid rgba(0, 255, 136, 0.4);
+      }
+      .slot.warning {
+        background: rgba(255, 149, 0, 0.2);
+        border: 1px solid rgba(255, 149, 0, 0.4);
+        animation: pulse-warning 2s infinite;
+      }
+      .slot.overdue {
+        background: rgba(255, 71, 87, 0.2);
+        border: 1px solid rgba(255, 71, 87, 0.4);
+        animation: pulse-danger 1.5s infinite;
+      }
+      .slot:hover {
+        transform: scale(1.1);
+        z-index: 10;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      }
+      .slot .coil-id {
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .slot .days {
+        font-size: 9px;
+        color: var(--text-muted);
+      }
+      .slot.warning .days {
+        color: var(--accent-orange);
+      }
+      .slot.overdue .days {
+        color: var(--accent-red);
+      }
+
+      @keyframes pulse-warning {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(255, 149, 0, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 4px rgba(255, 149, 0, 0);
+        }
+      }
+      @keyframes pulse-danger {
+        0%,
+        100% {
+          box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4);
+        }
+        50% {
+          box-shadow: 0 0 0 4px rgba(255, 71, 87, 0);
+        }
+      }
+
+      /* 搜索框 */
+      .search-box {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+      .search-input {
+        flex: 1;
+        padding: 12px 16px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid var(--border-subtle);
+        color: var(--text-primary);
+        font-size: 14px;
+      }
+      .search-input:focus {
+        outline: none;
+        border-color: var(--accent-cyan);
+      }
+      .search-input::placeholder {
+        color: var(--text-muted);
+      }
+
+      /* 物料详情弹窗 */
+      .coil-detail {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--gradient-card);
+        border: 1px solid var(--border-glow);
+        border-radius: 16px;
+        padding: 24px;
+        width: 320px;
+        z-index: 100;
+        display: none;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      }
+      .coil-detail.show {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: translate(-50%, -50%) scale(1);
+        }
+      }
+      .detail-close {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .detail-close:hover {
+        background: rgba(255, 71, 87, 0.2);
+        color: var(--accent-red);
+      }
+      .detail-header {
+        margin-bottom: 16px;
+      }
+      .detail-title {
+        font-size: 18px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .detail-subtitle {
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .detail-info {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 8px;
+      }
+      .info-label {
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .info-value {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .detail-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 16px;
+      }
+      .detail-btn {
+        flex: 1;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        border: none;
+        transition: all 0.3s;
+      }
+      .detail-btn.primary {
+        background: linear-gradient(135deg, var(--accent-cyan), #0099cc);
+        color: var(--primary-dark);
+      }
+      .detail-btn.secondary {
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--text-primary);
+        border: 1px solid var(--border-subtle);
+      }
+
+      /* 右侧面板 */
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      /* 统计概览 */
+      .overview-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 12px;
+      }
+      .overview-card {
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        padding: 16px;
+        text-align: center;
+      }
+      .overview-value {
+        font-size: 28px;
+        font-weight: 700;
+        margin-bottom: 4px;
+      }
+      .overview-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      /* 呆滞预警列表 */
+      .alert-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-height: 280px;
+        overflow-y: auto;
+      }
+      .alert-item {
+        display: flex;
+        gap: 12px;
+        padding: 14px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        border-left: 3px solid transparent;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+      .alert-item:hover {
+        background: rgba(0, 212, 255, 0.05);
+      }
+      .alert-item.critical {
+        border-left-color: var(--accent-red);
+      }
+      .alert-item.warning {
+        border-left-color: var(--accent-orange);
+      }
+      .alert-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        font-size: 16px;
+      }
+      .alert-item.critical .alert-icon {
+        background: rgba(255, 71, 87, 0.2);
+      }
+      .alert-item.warning .alert-icon {
+        background: rgba(255, 149, 0, 0.2);
+      }
+      .alert-content {
+        flex: 1;
+      }
+      .alert-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 4px;
+      }
+      .alert-desc {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+
+      /* 最近移动记录 */
+      .movement-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .movement-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+      }
+      .movement-arrow {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+      }
+      .movement-from,
+      .movement-to {
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: rgba(0, 212, 255, 0.1);
+      }
+      .movement-to {
+        background: rgba(0, 255, 136, 0.1);
+      }
+      .movement-info {
+        flex: 1;
+      }
+      .movement-coil {
+        font-size: 13px;
+        font-weight: 500;
+      }
+      .movement-time {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
+      /* 工序流转统计 */
+      .flow-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .flow-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .flow-label {
+        width: 60px;
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+      .flow-bar-container {
+        flex: 1;
+        height: 8px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .flow-bar {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.5s ease;
+      }
+      .flow-bar.rolling {
+        background: linear-gradient(90deg, var(--accent-cyan), #0099cc);
+      }
+      .flow-bar.slitting {
+        background: linear-gradient(90deg, var(--accent-green), #00cc6a);
+      }
+      .flow-bar.finishing {
+        background: linear-gradient(90deg, var(--accent-orange), #cc7700);
+      }
+      .flow-bar.annealing {
+        background: linear-gradient(90deg, var(--accent-purple), #8b5cf6);
+      }
+      .flow-value {
+        width: 40px;
+        font-size: 13px;
+        font-weight: 600;
+        text-align: right;
+      }
+
+      @media (max-width: 1200px) {
+        .content-grid {
+          grid-template-columns: 1fr;
+        }
+        .warehouse-grid {
+          grid-template-columns: repeat(8, 1fr);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="top-nav">
+      <div class="logo-section">
+        <div class="logo-icon">M</div>
+        <span class="logo-text">MOSES智能管理系统</span>
+      </div>
+      <div class="nav-menu">
+        <div class="nav-item">排产管理</div>
+        <div class="nav-item">质量评审</div>
+        <div class="nav-item active">物料追踪</div>
+        <div class="nav-item">生产执行</div>
+      </div>
+      <div class="user-section">
+        <div class="notification-btn">
+          <svg class="icon" viewBox="0 0 24 24">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <div class="notification-badge"></div>
+        </div>
+        <div class="user-avatar">王</div>
+      </div>
+    </nav>
+
+    <main class="main-container">
+      <header class="page-header">
+        <div class="page-title-section">
+          <h1>在制品追踪</h1>
+          <p class="page-subtitle">
+            实时库位可视 · 位置一键查询 · 呆滞物料预警 · 解决"找料难"问题
+          </p>
+        </div>
+        <div style="display: flex; gap: 12px">
+          <button class="btn btn-secondary">
+            <svg class="icon icon-sm" viewBox="0 0 24 24">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            库存报表
+          </button>
+          <button class="btn btn-primary">
+            <svg class="icon icon-sm" viewBox="0 0 24 24">
+              <path
+                d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+              />
+            </svg>
+            入库登记
+          </button>
+        </div>
+      </header>
+
+      <!-- 统计卡片 -->
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-cyan),
+                  #0099cc
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <path
+                  d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">156</div>
+          <div class="stat-label">在制品总数</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-green),
+                  #00cc6a
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">42</div>
+          <div class="stat-label">今日流转</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(
+                  135deg,
+                  var(--accent-orange),
+                  #cc7700
+                );
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">12</div>
+          <div class="stat-label">超7天未动</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <div
+              class="stat-icon"
+              style="
+                background: linear-gradient(135deg, var(--accent-red), #cc3a47);
+              "
+            >
+              <svg class="icon-lg" viewBox="0 0 24 24" stroke="#0a1628">
+                <path
+                  d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                />
+              </svg>
+            </div>
+          </div>
+          <div class="stat-value">5</div>
+          <div class="stat-label">呆滞预警</div>
+        </div>
+      </section>
+
+      <div class="content-grid">
+        <!-- 左侧库位地图 -->
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">
+              <div class="card-title-icon">
+                <svg
+                  class="icon"
+                  viewBox="0 0 24 24"
+                  stroke="var(--accent-cyan)"
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="3" y1="9" x2="21" y2="9" />
+                  <line x1="9" y1="21" x2="9" y2="9" />
+                </svg>
+              </div>
+              库位地图 - 分切区
+            </div>
+            <div class="tab-group">
+              <button class="tab-btn active">分切区</button>
+              <button class="tab-btn">轧机区</button>
+              <button class="tab-btn">精切区</button>
+              <button class="tab-btn">退火区</button>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="search-box">
+              <input
+                type="text"
+                class="search-input"
+                placeholder="输入卷号快速定位，如 F2601301"
+              />
+              <button class="btn btn-primary" style="padding: 12px 20px">
+                <svg class="icon icon-sm" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+                搜索
+              </button>
+            </div>
+
+            <div class="warehouse-map">
+              <div class="map-header">
+                <span class="map-title">A1-A10 货架</span>
+                <div class="map-legend">
+                  <div class="legend-item">
+                    <span class="legend-dot empty"></span> 空位
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-dot normal"></span> 正常
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-dot warning"></span> >7天
+                  </div>
+                  <div class="legend-item">
+                    <span class="legend-dot overdue"></span> >14天
+                  </div>
+                </div>
+              </div>
+
+              <div class="warehouse-grid">
+                <div class="warehouse-row-label">A排</div>
+                <div class="slot normal" onclick="showDetail(this)">
+                  <span class="coil-id">F301</span><span class="days">2天</span>
+                </div>
+                <div class="slot normal">
+                  <span class="coil-id">F302</span><span class="days">1天</span>
+                </div>
+                <div class="slot warning">
+                  <span class="coil-id">F298</span><span class="days">8天</span>
+                </div>
+                <div class="slot empty"></div>
+                <div class="slot normal">
+                  <span class="coil-id">F305</span><span class="days">3天</span>
+                </div>
+                <div class="slot overdue">
+                  <span class="coil-id">F289</span
+                  ><span class="days">15天</span>
+                </div>
+                <div class="slot normal">
+                  <span class="coil-id">F307</span><span class="days">1天</span>
+                </div>
+                <div class="slot empty"></div>
+                <div class="slot normal">
+                  <span class="coil-id">F309</span><span class="days">4天</span>
+                </div>
+                <div class="slot warning">
+                  <span class="coil-id">F295</span><span class="days">9天</span>
+                </div>
+
+                <div class="warehouse-row-label">B排</div>
+                <div class="slot normal">
+                  <span class="coil-id">F311</span><span class="days">2天</span>
+                </div>
+                <div class="slot empty"></div>
+                <div class="slot normal">
+                  <span class="coil-id">F313</span><span class="days">1天</span>
+                </div>
+                <div class="slot normal">
+                  <span class="coil-id">F314</span><span class="days">3天</span>
+                </div>
+                <div class="slot overdue">
+                  <span class="coil-id">F285</span
+                  ><span class="days">18天</span>
+                </div>
+                <div class="slot empty"></div>
+                <div class="slot normal">
+                  <span class="coil-id">F317</span><span class="days">2天</span>
+                </div>
+                <div class="slot warning">
+                  <span class="coil-id">F292</span
+                  ><span class="days">10天</span>
+                </div>
+                <div class="slot normal">
+                  <span class="coil-id">F319</span><span class="days">1天</span>
+                </div>
+                <div class="slot empty"></div>
+
+                <div class="warehouse-row-label">C排</div>
+                <div class="slot empty"></div>
+                <div class="slot normal">
+                  <span class="coil-id">F322</span><span class="days">4天</span>
+                </div>
+                <div class="slot normal">
+                  <span class="coil-id">F323</span><span class="days">2天</span>
+                </div>
+                <div class="slot warning">
+                  <span class="coil-id">F290</span
+                  ><span class="days">12天</span>
+                </div>
+                <div class="slot normal">
+                  <span class="coil-id">F325</span><span class="days">1天</span>
+                </div>
+                <div class="slot normal">
+                  <span class="coil-id">F326</span><span class="days">3天</span>
+                </div>
+                <div class="slot empty"></div>
+                <div class="slot overdue">
+                  <span class="coil-id">F281</span
+                  ><span class="days">21天</span>
+                </div>
+                <div class="slot normal">
+                  <span class="coil-id">F329</span><span class="days">2天</span>
+                </div>
+                <div class="slot normal">
+                  <span class="coil-id">F330</span><span class="days">1天</span>
+                </div>
+              </div>
+
+              <!-- 物料详情弹窗 -->
+              <div class="coil-detail" id="coilDetail">
+                <button class="detail-close" onclick="hideDetail()">×</button>
+                <div class="detail-header">
+                  <div class="detail-title">F2601301-A</div>
+                  <div class="detail-subtitle">分切子卷 · 库位 A-01</div>
+                </div>
+                <div class="detail-info">
+                  <div class="info-row">
+                    <span class="info-label">规格</span
+                    ><span class="info-value">13μm × 872mm × 6200m</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">母卷号</span
+                    ><span class="info-value">Y2601298</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">客户</span
+                    ><span class="info-value">河北兴恒</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">入库时间</span
+                    ><span class="info-value">2026-02-02 14:30</span>
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">停放天数</span
+                    ><span class="info-value" style="color: var(--accent-green)"
+                      >2天</span
+                    >
+                  </div>
+                  <div class="info-row">
+                    <span class="info-label">质量状态</span
+                    ><span class="info-value" style="color: var(--accent-green)"
+                      >已评审-合格</span
+                    >
+                  </div>
+                </div>
+                <div class="detail-actions">
+                  <button class="detail-btn secondary">查看历史</button>
+                  <button class="detail-btn primary">发起流转</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右侧面板 -->
+        <aside class="sidebar">
+          <!-- 库存概览 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div class="card-title-icon">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-cyan)"
+                  >
+                    <line x1="18" y1="20" x2="18" y2="10" />
+                    <line x1="12" y1="20" x2="12" y2="4" />
+                    <line x1="6" y1="20" x2="6" y2="14" />
+                  </svg>
+                </div>
+                工序分布
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="flow-stats">
+                <div class="flow-item">
+                  <span class="flow-label">轧机</span>
+                  <div class="flow-bar-container">
+                    <div class="flow-bar rolling" style="width: 25%"></div>
+                  </div>
+                  <span class="flow-value" style="color: var(--accent-cyan)"
+                    >38</span
+                  >
+                </div>
+                <div class="flow-item">
+                  <span class="flow-label">分切</span>
+                  <div class="flow-bar-container">
+                    <div class="flow-bar slitting" style="width: 45%"></div>
+                  </div>
+                  <span class="flow-value" style="color: var(--accent-green)"
+                    >68</span
+                  >
+                </div>
+                <div class="flow-item">
+                  <span class="flow-label">精切</span>
+                  <div class="flow-bar-container">
+                    <div class="flow-bar finishing" style="width: 20%"></div>
+                  </div>
+                  <span class="flow-value" style="color: var(--accent-orange)"
+                    >32</span
+                  >
+                </div>
+                <div class="flow-item">
+                  <span class="flow-label">退火</span>
+                  <div class="flow-bar-container">
+                    <div class="flow-bar annealing" style="width: 12%"></div>
+                  </div>
+                  <span class="flow-value" style="color: var(--accent-purple)"
+                    >18</span
+                  >
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 呆滞预警 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div
+                  class="card-title-icon"
+                  style="background: rgba(255, 71, 87, 0.15)"
+                >
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-red)"
+                  >
+                    <path
+                      d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+                    />
+                  </svg>
+                </div>
+                呆滞预警
+              </div>
+              <span style="font-size: 12px; color: var(--accent-red)">5项</span>
+            </div>
+            <div class="card-body">
+              <div class="alert-list">
+                <div class="alert-item critical">
+                  <div class="alert-icon">⚠️</div>
+                  <div class="alert-content">
+                    <div class="alert-title">F2601281 停放21天</div>
+                    <div class="alert-desc">C-08 · 等待质量评审</div>
+                  </div>
+                </div>
+                <div class="alert-item critical">
+                  <div class="alert-icon">⚠️</div>
+                  <div class="alert-content">
+                    <div class="alert-title">F2601285 停放18天</div>
+                    <div class="alert-desc">B-05 · 订单暂停</div>
+                  </div>
+                </div>
+                <div class="alert-item critical">
+                  <div class="alert-icon">⚠️</div>
+                  <div class="alert-content">
+                    <div class="alert-title">F2601289 停放15天</div>
+                    <div class="alert-desc">A-06 · 等待客户确认</div>
+                  </div>
+                </div>
+                <div class="alert-item warning">
+                  <div class="alert-icon">⏰</div>
+                  <div class="alert-content">
+                    <div class="alert-title">F2601290 停放12天</div>
+                    <div class="alert-desc">C-04 · 设备维护中</div>
+                  </div>
+                </div>
+                <div class="alert-item warning">
+                  <div class="alert-icon">⏰</div>
+                  <div class="alert-content">
+                    <div class="alert-title">F2601292 停放10天</div>
+                    <div class="alert-desc">B-08 · 待排产</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 最近流转 -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">
+                <div class="card-title-icon">
+                  <svg
+                    class="icon"
+                    viewBox="0 0 24 24"
+                    stroke="var(--accent-cyan)"
+                  >
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                  </svg>
+                </div>
+                最近流转
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="movement-list">
+                <div class="movement-item">
+                  <div class="movement-info">
+                    <div class="movement-coil">F2601330</div>
+                    <div class="movement-time">5分钟前</div>
+                  </div>
+                  <div class="movement-arrow">
+                    <span class="movement-from">分切</span>
+                    →
+                    <span class="movement-to">精切</span>
+                  </div>
+                </div>
+                <div class="movement-item">
+                  <div class="movement-info">
+                    <div class="movement-coil">F2601328</div>
+                    <div class="movement-time">12分钟前</div>
+                  </div>
+                  <div class="movement-arrow">
+                    <span class="movement-from">轧机</span>
+                    →
+                    <span class="movement-to">分切</span>
+                  </div>
+                </div>
+                <div class="movement-item">
+                  <div class="movement-info">
+                    <div class="movement-coil">F2601325</div>
+                    <div class="movement-time">28分钟前</div>
+                  </div>
+                  <div class="movement-arrow">
+                    <span class="movement-from">精切</span>
+                    →
+                    <span class="movement-to">包装</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </main>
+
+    <script>
+      function showDetail(slot) {
+        document.getElementById("coilDetail").classList.add("show");
+      }
+      function hideDetail() {
+        document.getElementById("coilDetail").classList.remove("show");
+      }
+      document.querySelectorAll(".slot:not(.empty)").forEach((slot) => {
+        slot.addEventListener("click", function () {
+          showDetail(this);
+        });
+      });
+      document.querySelectorAll(".tab-btn").forEach((btn) => {
+        btn.addEventListener("click", function () {
+          this.parentElement
+            .querySelectorAll(".tab-btn")
+            .forEach((b) => b.classList.remove("active"));
+          this.classList.add("active");
+        });
+      });
+      document.querySelectorAll(".nav-item").forEach((item) => {
+        item.addEventListener("click", function () {
+          document
+            .querySelectorAll(".nav-item")
+            .forEach((i) => i.classList.remove("active"));
+          this.classList.add("active");
+        });
+      });
+      // 进度条动画
+      document.querySelectorAll(".flow-bar").forEach((bar) => {
+        const width = bar.style.width;
+        bar.style.width = "0";
+        setTimeout(() => {
+          bar.style.width = width;
+        }, 300);
+      });
+    </script>
+  </body>
+</html>

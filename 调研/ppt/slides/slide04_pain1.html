@@ -1,0 +1,173 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      html {
+        background: #F8F9FA;
+      }
+      body {
+        width: 720pt;
+        height: 405pt;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        display: flex;
+        background: #f8f9fa;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50pt;
+        background: #1e3a5f;
+        display: flex;
+        align-items: center;
+        padding: 0 35pt;
+      }
+      .header-badge {
+        background: #e76f51;
+        color: #ffffff;
+        padding: 4pt 10pt;
+        border-radius: 3pt;
+      }
+      .badge-text {
+        font-size: 11pt;
+        font-weight: bold;
+        margin: 0;
+        color: #ffffff;
+      }
+      .header h1 {
+        color: #ffffff;
+        font-size: 20pt;
+        font-weight: bold;
+        margin: 0 0 0 12pt;
+      }
+      .main {
+        margin-top: 58pt;
+        padding: 12pt 35pt;
+        display: flex;
+        gap: 20pt;
+        box-sizing: border-box;
+      }
+      .status-card {
+        flex: 1;
+        background: #F8F9FA;
+        border-radius: 6pt;
+        padding: 15pt;
+        box-shadow: 0 2pt 5pt rgba(0, 0, 0, 0.06);
+      }
+      .card-title {
+        color: #1e3a5f;
+        font-size: 13pt;
+        font-weight: bold;
+        margin: 0 0 8pt 0;
+      }
+      .title-bar {
+        width: 40pt;
+        height: 2pt;
+        background: #e76f51;
+        margin-bottom: 10pt;
+      }
+      .status-card ul {
+        margin: 0;
+        padding-left: 16pt;
+      }
+      .status-card li {
+        color: #444444;
+        font-size: 10pt;
+        margin-bottom: 8pt;
+        line-height: 1.4;
+      }
+      .detail-card {
+        flex: 1;
+        background: #F8F9FA;
+        border-radius: 6pt;
+        padding: 15pt;
+        box-shadow: 0 2pt 5pt rgba(0, 0, 0, 0.06);
+      }
+      .detail-item {
+        background: #fff8f6;
+        border-left: 3pt solid #e76f51;
+        padding: 8pt 10pt;
+        margin-bottom: 8pt;
+        border-radius: 0 3pt 3pt 0;
+      }
+      .detail-item p {
+        color: #555555;
+        font-size: 10pt;
+        margin: 0;
+        line-height: 1.3;
+      }
+      .impact-bar {
+        position: absolute;
+        bottom: 15pt;
+        left: 35pt;
+        right: 35pt;
+        background: #fff3e0;
+        border: 1pt solid #ffcc80;
+        border-radius: 5pt;
+        padding: 10pt 15pt;
+        display: flex;
+        align-items: center;
+      }
+      .impact-icon {
+        background: #e76f51;
+        padding: 3pt 8pt;
+        border-radius: 3pt;
+      }
+      .impact-icon p {
+        color: #ffffff;
+        font-size: 9pt;
+        font-weight: bold;
+        margin: 0;
+      }
+      .impact-text {
+        color: #444444;
+        font-size: 9pt;
+        margin: 0 0 0 12pt;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-badge"><p class="badge-text">痛点 1</p></div>
+      <h1>计划管理分散</h1>
+    </div>
+    <div class="main">
+      <div class="status-card">
+        <p class="card-title">现状描述</p>
+        <div class="title-bar"></div>
+        <ul>
+          <li><b>计划表分散</b>：轧机/分切/精切计划分布在32个Excel Sheet中</li>
+          <li>
+            <b>无汇总视图</b>：计划员需在Sheet间频繁切换，难以一眼把握进度
+          </li>
+          <li><b>信息不同步</b>：轧机下料后，分切计划需手动更新可用料清单</li>
+          <li><b>版本混乱</b>：计划修改后无历史记录，出问题时难以追溯</li>
+        </ul>
+      </div>
+      <div class="detail-card">
+        <p class="card-title">具体表现</p>
+        <div class="title-bar"></div>
+        <div class="detail-item">
+          <p>计划员每天需要在32个Sheet间切换查看各机台进度</p>
+        </div>
+        <div class="detail-item">
+          <p>轧机完成后，需手动将信息复制到轧制跨在制料表供分切参考</p>
+        </div>
+        <div class="detail-item">
+          <p>计划调整后，其他人不知道改了什么、为什么改</p>
+        </div>
+      </div>
+    </div>
+    <div class="impact-bar">
+      <div class="impact-icon"><p>影响</p></div>
+      <p class="impact-text">
+        计划员工作量大易遗漏 · 信息同步滞后 · 计划调整无法追溯
+      </p>
+    </div>
+  </body>
+</html>

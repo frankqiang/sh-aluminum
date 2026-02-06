@@ -1,0 +1,183 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      html {
+        background: #F8F9FA;
+      }
+      body {
+        width: 720pt;
+        height: 405pt;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        display: flex;
+        background: #f8f9fa;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50pt;
+        background: #1e3a5f;
+        display: flex;
+        align-items: center;
+        padding: 0 35pt;
+      }
+      .header h1 {
+        color: #ffffff;
+        font-size: 22pt;
+        font-weight: bold;
+        margin: 0;
+      }
+      .main {
+        margin-top: 55pt;
+        padding: 10pt 35pt;
+        box-sizing: border-box;
+      }
+      .compare-table {
+        background: #F8F9FA;
+        border-radius: 5pt;
+        padding: 10pt;
+        box-shadow: 0 2pt 5pt rgba(0, 0, 0, 0.06);
+        margin-bottom: 10pt;
+      }
+      .table-title {
+        color: #1e3a5f;
+        font-size: 12pt;
+        font-weight: bold;
+        margin: 0 0 8pt 0;
+      }
+      .table-header {
+        display: flex;
+        background: #1e3a5f;
+        border-radius: 3pt;
+        padding: 6pt 8pt;
+        margin-bottom: 3pt;
+      }
+      .table-header p {
+        color: #ffffff;
+        font-size: 9pt;
+        font-weight: bold;
+        margin: 0;
+      }
+      .col-scene {
+        width: 110pt;
+      }
+      .col-before {
+        flex: 1;
+      }
+      .col-after {
+        flex: 1;
+      }
+      .table-row {
+        display: flex;
+        padding: 5pt 8pt;
+        border-bottom: 1pt solid #eeeeee;
+      }
+      .table-row:last-child {
+        border-bottom: none;
+      }
+      .table-row p {
+        font-size: 9pt;
+        margin: 0;
+      }
+      .table-row .col-scene {
+        color: #1e3a5f;
+        font-weight: bold;
+      }
+      .table-row .col-before {
+        color: #e76f51;
+      }
+      .table-row .col-after {
+        color: #2ecc71;
+      }
+      .value-grid {
+        display: flex;
+        gap: 12pt;
+      }
+      .value-card {
+        flex: 1;
+        background: #F8F9FA;
+        border-radius: 5pt;
+        padding: 12pt;
+        box-shadow: 0 2pt 5pt rgba(0, 0, 0, 0.06);
+        text-align: center;
+        border-top: 3pt solid #2ecc71;
+      }
+      .value-title {
+        color: #2ecc71;
+        font-size: 11pt;
+        font-weight: bold;
+        margin: 0 0 6pt 0;
+      }
+      .value-desc {
+        color: #555555;
+        font-size: 9pt;
+        margin: 0;
+        line-height: 1.4;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>系统价值总结</h1>
+    </div>
+    <div class="main">
+      <div class="compare-table">
+        <p class="table-title">使用前后对比</p>
+        <div class="table-header">
+          <p class="col-scene">场景</p>
+          <p class="col-before">使用系统前</p>
+          <p class="col-after">使用系统后</p>
+        </div>
+        <div class="table-row">
+          <p class="col-scene">查看今天计划</p>
+          <p class="col-before">在32个Excel Sheet中切换</p>
+          <p class="col-after">打开生产看板，一屏全览</p>
+        </div>
+        <div class="table-row">
+          <p class="col-scene">了解订单进度</p>
+          <p class="col-before">人工统计各卷完成情况</p>
+          <p class="col-after">系统自动汇总，实时显示</p>
+        </div>
+        <div class="table-row">
+          <p class="col-scene">质量评审传递</p>
+          <p class="col-before">手动复制，可能漏看</p>
+          <p class="col-after">评审即时同步，漏不了</p>
+        </div>
+        <div class="table-row">
+          <p class="col-scene">精切找料</p>
+          <p class="col-before">在1000个卷里凭经验找</p>
+          <p class="col-after">扫码查位置，快速定位</p>
+        </div>
+        <div class="table-row">
+          <p class="col-scene">发现逾期风险</p>
+          <p class="col-before">临近交期才发现</p>
+          <p class="col-after">提前预警，留出调整时间</p>
+        </div>
+      </div>
+      <div class="value-grid">
+        <div class="value-card">
+          <p class="value-title">提高效率</p>
+          <p class="value-desc">减少手工复制、人工统计、找料时间</p>
+        </div>
+        <div class="value-card">
+          <p class="value-title">减少错误</p>
+          <p class="value-desc">信息自动同步，流程卡点控制</p>
+        </div>
+        <div class="value-card">
+          <p class="value-title">增强可控性</p>
+          <p class="value-desc">实时掌握进度，异常及时预警</p>
+        </div>
+        <div class="value-card">
+          <p class="value-title">支撑追溯</p>
+          <p class="value-desc">完整数据链条，问题可追溯</p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      html {
+        background: #F8F9FA;
+      }
+      body {
+        width: 720pt;
+        height: 405pt;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        display: flex;
+        background: #f8f9fa;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 50pt;
+        background: #1e3a5f;
+        display: flex;
+        align-items: center;
+        padding: 0 35pt;
+      }
+      .header-badge {
+        background: #e76f51;
+        padding: 4pt 10pt;
+        border-radius: 3pt;
+      }
+      .badge-text {
+        font-size: 11pt;
+        font-weight: bold;
+        margin: 0;
+        color: #ffffff;
+      }
+      .header h1 {
+        color: #ffffff;
+        font-size: 20pt;
+        font-weight: bold;
+        margin: 0 0 0 12pt;
+      }
+      .main {
+        margin-top: 58pt;
+        padding: 12pt 35pt;
+        display: flex;
+        gap: 20pt;
+        box-sizing: border-box;
+      }
+      .status-card {
+        flex: 1;
+        background: #F8F9FA;
+        border-radius: 6pt;
+        padding: 15pt;
+        box-shadow: 0 2pt 5pt rgba(0, 0, 0, 0.06);
+      }
+      .card-title {
+        color: #1e3a5f;
+        font-size: 13pt;
+        font-weight: bold;
+        margin: 0 0 8pt 0;
+      }
+      .title-bar {
+        width: 40pt;
+        height: 2pt;
+        background: #e76f51;
+        margin-bottom: 10pt;
+      }
+      .status-card ul {
+        margin: 0;
+        padding-left: 16pt;
+      }
+      .status-card li {
+        color: #444444;
+        font-size: 10pt;
+        margin-bottom: 8pt;
+        line-height: 1.4;
+      }
+      .detail-card {
+        flex: 1;
+        background: #F8F9FA;
+        border-radius: 6pt;
+        padding: 15pt;
+        box-shadow: 0 2pt 5pt rgba(0, 0, 0, 0.06);
+      }
+      .detail-item {
+        background: #fff8f6;
+        border-left: 3pt solid #e76f51;
+        padding: 8pt 10pt;
+        margin-bottom: 8pt;
+        border-radius: 0 3pt 3pt 0;
+      }
+      .detail-item p {
+        color: #555555;
+        font-size: 10pt;
+        margin: 0;
+        line-height: 1.3;
+      }
+      .impact-bar {
+        position: absolute;
+        bottom: 15pt;
+        left: 35pt;
+        right: 35pt;
+        background: #fff3e0;
+        border: 1pt solid #ffcc80;
+        border-radius: 5pt;
+        padding: 10pt 15pt;
+        display: flex;
+        align-items: center;
+      }
+      .impact-icon {
+        background: #e76f51;
+        padding: 3pt 8pt;
+        border-radius: 3pt;
+      }
+      .impact-icon p {
+        color: #ffffff;
+        font-size: 9pt;
+        font-weight: bold;
+        margin: 0;
+      }
+      .impact-text {
+        color: #444444;
+        font-size: 9pt;
+        margin: 0 0 0 12pt;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <div class="header-badge"><p class="badge-text">痛点 4</p></div>
+      <h1>订单进度不透明</h1>
+    </div>
+    <div class="main">
+      <div class="status-card">
+        <p class="card-title">现状描述</p>
+        <div class="title-bar"></div>
+        <ul>
+          <li>
+            <b>无状态跟踪</b>：订单没有明确的状态标记（待排产/生产中/已完成）
+          </li>
+          <li><b>人工统计</b>：一个订单需多卷料满足时，靠人工统计已完成多少</li>
+          <li><b>无逾期预警</b>：交期临近时才发现可能赶不上，无提前预警</li>
+          <li>
+            <b>重排困难</b>：质量问题导致订单需重新匹配料卷时，进度更难追踪
+          </li>
+        </ul>
+      </div>
+      <div class="detail-card">
+        <p class="card-title">具体表现</p>
+        <div class="title-bar"></div>
+        <div class="detail-item">
+          <p>订单优先级主要靠计划员记忆和经验判断</p>
+        </div>
+        <div class="detail-item">
+          <p>客户问我的订单做到哪了，需要翻多张Excel表统计</p>
+        </div>
+        <div class="detail-item">
+          <p>某个订单差一卷没做完，可能直到发货时才发现</p>
+        </div>
+      </div>
+    </div>
+    <div class="impact-bar">
+      <div class="impact-icon"><p>影响</p></div>
+      <p class="impact-text">
+        交期管理被动逾期风险高 · 客户询问无法快速响应 · 多卷订单容易遗漏
+      </p>
+    </div>
+  </body>
+</html>

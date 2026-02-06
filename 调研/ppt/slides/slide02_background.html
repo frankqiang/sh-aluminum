@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      html {
+        background: #F8F9FA;
+      }
+      body {
+        width: 720pt;
+        height: 405pt;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        display: flex;
+        background: #f8f9fa;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 55pt;
+        background: #1e3a5f;
+        display: flex;
+        align-items: center;
+        padding: 0 35pt;
+      }
+      .header h1 {
+        color: #ffffff;
+        font-size: 22pt;
+        font-weight: bold;
+        margin: 0;
+      }
+      .main {
+        margin-top: 65pt;
+        padding: 15pt 35pt;
+        display: flex;
+        gap: 25pt;
+        box-sizing: border-box;
+      }
+      .info-card {
+        flex: 1;
+        background: #F8F9FA;
+        border-radius: 8pt;
+        padding: 20pt;
+        box-shadow: 0 2pt 8pt rgba(0, 0, 0, 0.08);
+      }
+      .card-title {
+        color: #1e3a5f;
+        font-size: 15pt;
+        font-weight: bold;
+        margin: 0 0 12pt 0;
+      }
+      .title-bar {
+        width: 50pt;
+        height: 2pt;
+        background: #e76f51;
+        margin-bottom: 12pt;
+      }
+      .info-card p {
+        color: #333333;
+        font-size: 11pt;
+        margin: 0 0 10pt 0;
+        line-height: 1.5;
+      }
+      .equipment-card {
+        flex: 1.2;
+        background: #F8F9FA;
+        border-radius: 8pt;
+        padding: 20pt;
+        box-shadow: 0 2pt 8pt rgba(0, 0, 0, 0.08);
+      }
+      .equipment-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10pt;
+        margin-top: 12pt;
+      }
+      .equipment-item {
+        width: 48%;
+        display: flex;
+        align-items: center;
+        background: #f8f9fa;
+        padding: 10pt 12pt;
+        border-radius: 5pt;
+        border-left: 3pt solid #1e3a5f;
+      }
+      .equipment-item p {
+        color: #333333;
+        font-size: 11pt;
+        margin: 0;
+      }
+      .process-bar {
+        position: absolute;
+        bottom: 15pt;
+        left: 35pt;
+        right: 35pt;
+        background: #1e3a5f;
+        padding: 12pt 20pt;
+        border-radius: 5pt;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .process-bar p {
+        color: #ffffff;
+        font-size: 11pt;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>项目背景 - 企业现状</h1>
+    </div>
+    <div class="main">
+      <div class="info-card">
+        <p class="card-title">企业概况</p>
+        <div class="title-bar"></div>
+        <p>
+          贵公司是一家专业生产各类铝箔卷的制造企业，产品涵盖电池箔、双零箔等多种类型。
+        </p>
+        <p>目前生产管理主要依赖<b>Excel表格</b>和<b>人工协调</b>。</p>
+        <p>随着产能扩大和客户质量要求提升，现有管理方式面临较大压力。</p>
+      </div>
+      <div class="equipment-card">
+        <p class="card-title">主要生产设备</p>
+        <div class="title-bar"></div>
+        <div class="equipment-grid">
+          <div class="equipment-item">
+            <p><b>14</b>台 轧机</p>
+          </div>
+          <div class="equipment-item">
+            <p><b>14</b>台 分切机</p>
+          </div>
+          <div class="equipment-item">
+            <p><b>49</b>台 精切机</p>
+          </div>
+          <div class="equipment-item">
+            <p><b>60</b>台 退火炉</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="process-bar">
+      <p>胚料出库 → 轧机 → 分切 → 精切/退火 → 包装</p>
+    </div>
+  </body>
+</html>

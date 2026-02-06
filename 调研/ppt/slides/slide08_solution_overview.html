@@ -1,0 +1,151 @@
+<!doctype html>
+<html>
+  <head>
+    <style>
+      html {
+        background: #F8F9FA;
+      }
+      body {
+        width: 720pt;
+        height: 405pt;
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        display: flex;
+        background: #f8f9fa;
+        position: relative;
+        box-sizing: border-box;
+      }
+      .header {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 45pt;
+        background: #1e3a5f;
+        display: flex;
+        align-items: center;
+        padding: 0 35pt;
+      }
+      .header h1 {
+        color: #ffffff;
+        font-size: 18pt;
+        font-weight: bold;
+        margin: 0;
+      }
+      .solution-grid {
+        margin-top: 50pt;
+        padding: 8pt 30pt;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10pt;
+        box-sizing: border-box;
+      }
+      .solution-card {
+        width: 320pt;
+        background: #F8F9FA;
+        border-radius: 5pt;
+        padding: 10pt;
+        box-shadow: 0 2pt 5pt rgba(0, 0, 0, 0.08);
+        display: flex;
+        align-items: flex-start;
+        gap: 8pt;
+      }
+      .pain-tag {
+        background: #fff3e0;
+        padding: 3pt 5pt;
+        border-radius: 3pt;
+      }
+      .pain-tag p {
+        color: #e76f51;
+        font-size: 8pt;
+        font-weight: bold;
+        margin: 0;
+      }
+      .solution-content {
+        flex: 1;
+      }
+      .solution-title {
+        color: #1e3a5f;
+        font-size: 10pt;
+        font-weight: bold;
+        margin: 0 0 4pt 0;
+      }
+      .solution-desc {
+        color: #555555;
+        font-size: 9pt;
+        margin: 0 0 5pt 0;
+        line-height: 1.3;
+      }
+      .module-tag {
+        background: #e8f4fd;
+        display: inline-block;
+        padding: 2pt 5pt;
+        border-radius: 3pt;
+      }
+      .module-tag p {
+        color: #1e3a5f;
+        font-size: 8pt;
+        font-weight: bold;
+        margin: 0;
+      }
+      .footer-note {
+        position: absolute;
+        bottom: 40pt;
+        left: 30pt;
+        right: 30pt;
+        background: #1e3a5f;
+        border-radius: 4pt;
+        padding: 7pt 15pt;
+        text-align: center;
+      }
+      .footer-note p {
+        color: #ffffff;
+        font-size: 10pt;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>解决方案 - MES系统四大模块</h1>
+    </div>
+    <div class="solution-grid">
+      <div class="solution-card">
+        <div class="pain-tag"><p>痛点1</p></div>
+        <div class="solution-content">
+          <p class="solution-title">计划管理分散</p>
+          <p class="solution-desc">统一平台管理所有计划，提供生产看板</p>
+          <div class="module-tag"><p>排产模块</p></div>
+        </div>
+      </div>
+      <div class="solution-card">
+        <div class="pain-tag"><p>痛点2</p></div>
+        <div class="solution-content">
+          <p class="solution-title">质量评审传递断链</p>
+          <p class="solution-desc">评审信息结构化录入，自动同步到各环节</p>
+          <div class="module-tag"><p>质量模块</p></div>
+        </div>
+      </div>
+      <div class="solution-card">
+        <div class="pain-tag"><p>痛点3</p></div>
+        <div class="solution-content">
+          <p class="solution-title">在制品追踪困难</p>
+          <p class="solution-desc">在制品实时可视，位置可查，呆滞预警</p>
+          <div class="module-tag"><p>物料管理模块</p></div>
+        </div>
+      </div>
+      <div class="solution-card">
+        <div class="pain-tag"><p>痛点4</p></div>
+        <div class="solution-content">
+          <p class="solution-title">订单进度不透明</p>
+          <p class="solution-desc">订单状态实时跟踪，交期预警</p>
+          <div class="module-tag"><p>生产执行模块</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-note">
+      <p>四大模块形成闭环，全面解决生产管理痛点</p>
+    </div>
+  </body>
+</html>
