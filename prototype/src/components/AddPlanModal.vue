@@ -273,7 +273,10 @@ const selectedMachineName = computed(() => {
 const selectedMachineCapability = computed(() => {
   const m = selectedMachine.value
   if (!m) return ''
-  return `可轧 ${m.passes.join(', ')} 道次`
+  // array.join 只有在 passes 是数组的时候可用
+  // 在 mock data 里，passes 可能是一个字符串比如 '1-3'
+  const passText = Array.isArray(m.passes) ? m.passes.join(', ') : m.passes
+  return `可轧 ${passText} 道次`
 })
 
 function addPass() {
