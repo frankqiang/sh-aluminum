@@ -29,14 +29,13 @@
             <div class="v-section">
               <div class="v-section-title">目标机台</div>
               <div class="form-row">
-                <select class="form-input auto-width" v-model="form.machineId">
-                  <option value="" disabled>请选择机台</option>
-                  <optgroup v-for="group in machineGroups" :key="group.name" :label="group.name">
-                    <option v-for="m in group.machines" :key="m.id" :value="m.id">
-                      {{ m.name }}
-                    </option>
-                  </optgroup>
-                </select>
+                <CustomSelect 
+                  v-model="form.machineId" 
+                  :options="machineGroupsOptions" 
+                  placeholder="请选择机台" 
+                  :grouped="true" 
+                  style="min-width: 200px; width: fit-content;"
+                />
               </div>
             </div>
 
@@ -65,25 +64,19 @@
               <div class="form-grid">
                 <div class="form-item">
                   <span class="label">合金 <span class="req">*</span></span>
-                  <select class="form-input" v-model="form.alloy">
-                    <option value="" disabled>选择合金</option>
-                    <option value="1060">1060</option>
-                    <option value="1100">1100</option>
-                    <option value="1235D">1235D</option>
-                    <option value="1070">1070</option>
-                    <option value="8079">8079</option>
-                    <option value="1235">1235</option>
-                  </select>
+                  <CustomSelect 
+                    v-model="form.alloy" 
+                    :options="['1060', '1100', '1235D', '1070', '8079', '1235']" 
+                    placeholder="选择合金" 
+                  />
                 </div>
                 <div class="form-item">
                   <span class="label">用途 <span class="req">*</span></span>
-                  <select class="form-input" v-model="form.usage">
-                    <option value="" disabled>选择用途</option>
-                    <option value="电">电池箔 (电)</option>
-                    <option value="药">药箔 (药)</option>
-                    <option value="食">食品箔 (食)</option>
-                    <option value="双零">双零箔 (双零)</option>
-                  </select>
+                  <CustomSelect 
+                    v-model="form.usage" 
+                    :options="usageOptions" 
+                    placeholder="选择用途" 
+                  />
                 </div>
                 <div class="form-item">
                   <span class="label">来料厚度 (mm) <span class="req">*</span></span>
@@ -175,6 +168,7 @@
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
 import { Plus, X, ArrowRight, ArrowLeft, Info, Trash2 } from 'lucide-vue-next'
+import CustomSelect from './CustomSelect.vue'
 import { rollingMachines } from '../data/mock.js'
 
 const props = defineProps({
@@ -219,15 +213,34 @@ function handleClose() {
 
 // ----------------- Step 1 逻辑 -----------------
 
-const machineGroups = computed(() => {
-  const groups = [
-    { name: '粗轧机 (1-3号)', machines: rollingMachines.filter(m => m.id <= 3) },
-    { name: '中轧机 (4-6号)', machines: rollingMachines.filter(m => m.id >= 4 && m.id <= 6) },
-    { name: '中精轧 (7号)', machines: rollingMachines.filter(m => m.id === 7) },
-    { name: '精轧机 (8-14号)', machines: rollingMachines.filter(m => m.id >= 8) },
+// 将 mock 机器数据转换为 CustomSelect 分组选项结构
+const machineGroupsOptions = computed(() => {
+  return [
+    { 
+      label: '粗轧机 (1-3号)', 
+      options: rollingMachines.filter(m => m.id <= 3).map(m => ({ label: m.name, value: m.id }))
+    },
+    { 
+      label: '中轧机 (4-6号)', 
+      options: rollingMachines.filter(m => m.id >= 4 && m.id <= 6).map(m => ({ label: m.name, value: m.id }))
+    },
+    { 
+      label: '中精轧 (7号)', 
+      options: rollingMachines.filter(m => m.id === 7).map(m => ({ label: m.name, value: m.id }))
+    },
+    { 
+      label: '精轧机 (8-14号)', 
+      options: rollingMachines.filter(m => m.id >= 8).map(m => ({ label: m.name, value: m.id }))
+    },
   ]
-  return groups
 })
+
+const usageOptions = [
+  { label: '电池箔 (电)', value: '电' },
+  { label: '药箔 (药)', value: '药' },
+  { label: '食品箔 (食)', value: '食' },
+  { label: '双零箔 (双零)', value: '双零' },
+]
 
 const canGoNext = computed(() => {
   return form.machineId !== '' &&
