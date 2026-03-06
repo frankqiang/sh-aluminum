@@ -68,13 +68,16 @@
             <!-- 切刀规格 -->
             <td>
               <template v-if="row.cuttingPlan">
-                <!-- 多订单段时拼接展示，单订单回退 spec 字符串 -->
-                <span
-                  class="text-sm font-mono cutting-spec"
-                  :title="row.cuttingPlan.spec"
-                >
-                  {{ cuttingSpecLabel(row.cuttingPlan) }}
-                </span>
+                <!-- 循环展示每个独立规格，多订单则换行 -->
+                <div class="cutting-specs-wrapper">
+                  <div
+                    v-for="(spec, i) in getCuttingSpecs(row)"
+                    :key="i"
+                    class="text-sm font-mono cutting-spec"
+                  >
+                    {{ spec }}
+                  </div>
+                </div>
               </template>
               <span v-else class="text-muted text-sm">—</span>
             </td>
@@ -143,15 +146,26 @@ function statusLabel(status) {
   return map[status] || status
 }
 
-// 切刀规格标签：多订单段拼接展示
-function cuttingSpecLabel(cuttingPlan) {
-  if (cuttingPlan.segments) {
-    const orderSegs = cuttingPlan.segments.filter(s => s.type === 'order' && s.width)
+// 获取切刀规格数组（多订单换行显示）
+function getCuttingSpecs(row) {
+  const plan = row.cuttingPlan
+  if (!plan) return []
+  if (plan.segments) {
+    const orderSegs = plan.segments.filter(s => s.type === 'order' && s.width)
     if (orderSegs.length > 1) {
-      return orderSegs.map(s => `${s.width}mm`).join('+') + ' 多订单'
+      // 提取独立规格：如 13x750电池箔x23000-24000
+      return orderSegs.map(s => {
+        let lengthPart = ''
+        if (s.planLengthMin) {
+          lengthPart = `×${s.planLengthMin}`
+        } else if (s.lengthMin && s.lengthMax) {
+          lengthPart = `×${s.lengthMin}-${s.lengthMax}`
+        }
+        return `${row.thickness}×${s.width}${row.productType}${lengthPart}`
+      })
     }
   }
-  return cuttingPlan.spec || '—'
+  return [plan.spec || '—']
 }
 
 // 废料率阈值按产品类型区分
@@ -305,6 +319,11 @@ function productClass(type) {
 .review-badge.none { color: var(--text-muted); }
 
 /* 切刀规格 */
+.cutting-specs-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
 .cutting-spec {
   color: var(--text-secondary);
 }

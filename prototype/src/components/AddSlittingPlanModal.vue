@@ -709,8 +709,16 @@ function submitForm() {
     customer: firstOrder?.orderInfo?.customer || null,
     reviewStatus: selectedMaterial.value.reviewStatus,
     cuttingPlan: {
-      // 切刀规格：多订单拼接展示
-      spec: orderSegs.map(s => `${s.orderInfo.thickness ?? selectedMaterial.value.thickness}×${s.width}${selectedMaterial.value.productType}`).join(' + '),
+      // 切刀规格：多订单拼接展示（加长度）
+      spec: orderSegs.map(s => {
+        let lengthPart = ''
+        if (s.planLengthMin) {
+          lengthPart = `×${s.planLengthMin}`
+        } else if (s.orderInfo?.lengthMin && s.orderInfo?.lengthMax) {
+          lengthPart = `×${s.orderInfo.lengthMin}-${s.orderInfo.lengthMax}`
+        }
+        return `${s.orderInfo?.thickness ?? selectedMaterial.value.thickness}×${s.width}${selectedMaterial.value.productType}${lengthPart}`
+      }).join(' + '),
       wasteRate: parseFloat(wasteRate.value),
       orderReq: firstOrder?.orderReq || '',
       segments: segments.map(s => ({
@@ -720,6 +728,8 @@ function submitForm() {
         orderReq: s.orderReq,
         planCoils: s.planCoils,
         planLengthMin: s.planLengthMin,
+        lengthMin: s.orderInfo?.lengthMin,
+        lengthMax: s.orderInfo?.lengthMax,
         note: s.note,
         label: s.type === 'order' && s.orderInfo ? s.orderInfo.customer : (s.note || '')
       }))
@@ -766,7 +776,7 @@ function submitForm() {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   width: 100%;
-  max-width: 960px;
+  max-width: 1120px;
   max-height: 92vh;
   display: flex;
   flex-direction: column;

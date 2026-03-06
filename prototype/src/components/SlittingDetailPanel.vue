@@ -117,22 +117,31 @@
             </div>
 
             <div v-if="row.cuttingPlan" class="cutting-plan-content">
-              <div class="info-grid mb-4">
-                <div class="info-row">
-                  <span class="info-label">订单</span>
-                  <span class="info-value order-no-display" v-if="row.orderNo">
-                    {{ row.orderNo }} <span class="customer-name">{{ row.customer }}</span>
-                  </span>
-                  <span class="info-value text-muted" v-else>暂无订单</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">规格</span>
-                  <span class="info-value font-mono">{{ row.cuttingPlan.spec }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="info-label">订单要求</span>
-                  <span class="info-value">{{ row.cuttingPlan.orderReq || row.cuttingPlan.coreSpec || '—' }}</span>
-                </div>
+              <!-- 多订单拆分展示列表 -->
+              <div class="orders-group mb-4">
+                <template v-if="getOrderGroups(row).length > 0">
+                  <div
+                    class="order-info-block"
+                    v-for="(grp, idx) in getOrderGroups(row)"
+                    :key="idx"
+                  >
+                    <div class="info-row">
+                      <span class="info-label">订单</span>
+                      <span class="info-value order-no-display" v-if="grp.orderNo">
+                        {{ grp.orderNo }} <span class="customer-name" v-if="grp.customer">{{ grp.customer }}</span>
+                      </span>
+                      <span class="info-value text-muted" v-else>暂无订单</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">规格</span>
+                      <span class="info-value font-mono">{{ grp.spec }}</span>
+                    </div>
+                    <div class="info-row">
+                      <span class="info-label">订单要求</span>
+                      <span class="info-value">{{ grp.req }}</span>
+                    </div>
+                  </div>
+                </template>
               </div>
 
               <div class="sub-title mb-2">分配明细:</div>
@@ -152,7 +161,7 @@
                     <td class="text-right font-mono font-medium">{{ seg.width }}</td>
                     <td class="text-muted text-sm">
                       <span v-if="seg.label" class="seg-custom-label">{{ seg.label }}</span>
-                      <span v-if="seg.note" class="seg-note">{{ seg.note }}</span>
+                      <span v-if="seg.note && seg.note !== seg.label" class="seg-note">{{ seg.note }}</span>
                     </td>
                   </tr>
                 </tbody>
@@ -242,6 +251,42 @@ function reviewLabel(status) {
     case 'none': return '❌未提交'
     default: return status || '—'
   }
+}
+
+// 提取订单组合数据，以供切刀方案区拆分展示
+function getOrderGroups(row) {
+  if (!row.cuttingPlan) return []
+  
+  // 1. 如果有 segments 数组（新结构支持多订单）
+  if (row.cuttingPlan.segments) {
+    const orderSegs = row.cuttingPlan.segments.filter(s => s.type === 'order' && s.width)
+    if (orderSegs.length > 0) {
+      // 通过 segments 生成每一个订单的属性
+      // 通过 segments 生成每一个订单的属性
+      return orderSegs.map(s => {
+        let lengthPart = ''
+        if (s.planLengthMin) {
+          lengthPart = `×${s.planLengthMin}`
+        } else if (s.lengthMin && s.lengthMax) {
+          lengthPart = `×${s.lengthMin}-${s.lengthMax}`
+        }
+        return {
+          orderNo: s.orderId || '（未匹配）',
+          customer: s.label || '', 
+          spec: `${row.thickness}×${s.width}${row.productType}${lengthPart}`,
+          req: s.orderReq || '—'
+        }
+      })
+    }
+  }
+
+  // 2. 回退处理（旧结构：只有一个订单和规格字符串）
+  return [{
+    orderNo: row.orderNo,
+    customer: row.customer,
+    spec: row.cuttingPlan.spec || '—',
+    req: row.cuttingPlan.orderReq || row.cuttingPlan.coreSpec || '—'
+  }]
 }
 
 function segTypeLabel(type) {
@@ -421,11 +466,21 @@ function handleAction(actionName) {
   margin: 0 1.25rem;
 }
 
-/* 信息网格 */
-.info-grid {
+/* 订单分块展示 */
+.orders-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.order-info-block {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  padding: 0.75rem;
+  background-color: var(--bg-hover);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
 }
 
 .info-row {
