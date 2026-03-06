@@ -285,6 +285,23 @@ PrecisionCuttingView.vue（状态管理中心）
 | `pending_review` | 浅黄 `#fffbeb`              | **待评审，评审卡点高亮，不可开始精切** |
 | `planned`        | 白色（默认）                | 计划中                                 |
 
+### 5.4 `pending_review` 状态映射逻辑
+
+`pending_review` 不是一个独立的业务状态，而是**由评审状态驱动的展示状态**：
+
+```javascript
+// 在 computed 或渲染层处理
+function getDisplayStatus(plan) {
+  // 若评审未完成，无论计划状态如何，显示为待评审
+  if (plan.reviewStatus !== "reviewed") {
+    return "pending_review";
+  }
+  return plan.status; // completed / running / planned
+}
+```
+
+> **设计意图**：评审是精切执行的前置条件，评审未完成的条目应视觉上与常规计划区分，提醒计划员注意。
+
 ---
 
 ## 六、详情面板：PrecisionDetailPanel.vue
@@ -480,7 +497,39 @@ PrecisionCuttingView.vue（状态管理中心）
 
 ---
 
-## 九、设计原则
+## 九、路由与导航集成
+
+### 9.1 Vue Router 新增路由
+
+修改 `src/router/index.js`，在排产模块路由下新增精切排产页面：
+
+```javascript
+{
+  path: '/scheduling/precision-cutting',
+  name: 'PrecisionCutting',
+  component: () => import('@/views/PrecisionCuttingView.vue'),
+  meta: { title: '精切排产', module: 'scheduling' }
+}
+```
+
+### 9.2 侧边栏导航更新
+
+修改 `SideBar.vue`（或导航配置文件），在排产管理菜单下激活「精切排产」菜单项：
+
+```javascript
+// 排产管理子菜单（已有：总览、轧机排产、分切排产；新增精切排产）
+{ label: '🔬 精切排产', path: '/scheduling/precision-cutting' }
+```
+
+侧边栏高亮规则与分切页面一致：当前路由匹配时左侧色条 + 背景色高亮。
+
+### 9.3 Dashboard 总览联动
+
+Dashboard 中「精切」统计卡片点击后跳转到 `/scheduling/precision-cutting`（已在 Dashboard 设计中预留，此处仅确认路由名称一致）。
+
+---
+
+## 十、设计原则
 
 | 原则         | 说明                                                |
 | ------------ | --------------------------------------------------- |
