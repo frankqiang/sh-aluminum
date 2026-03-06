@@ -1,0 +1,243 @@
+/**
+ * 订单池 — 模拟数据
+ * 来源：MES系统导出的可匹配订单列表
+ * 字段设计参考：排产模块调研总结 §4.2.3（订单池核心字段）
+ * 实际订单池有44列字段，此处保留排产关键字段
+ */
+
+export const orderPool = [
+    // ----------------------------------------------------------------
+    // 电池箔订单（合金: 1060）
+    // ----------------------------------------------------------------
+    {
+        orderNo: 'SZ25121602434',     // NC执行单号
+        contractNo: 'HT2026-0115',   // 合同号
+        customer: '标兵母卷',
+        product: '电池箔成品',
+        alloy: '1060',
+        width: 1585,                  // 订单要求宽度 mm
+        thickness: 12,                // 订单要求厚度 μm
+        lengthMin: 23500,             // 米数范围下限 m
+        lengthMax: 24500,             // 米数范围上限 m
+        coreSpec: '152.4管芯/壁厚4管芯',
+        coreLength: 1605,             // 管芯长度 mm
+        innerDiameter: '152.4mm',     // 内径（6寸）
+        deliveryDate: '2026-03-08',
+        totalCoils: 5,
+        slittedCoils: 0,
+        remainingCoils: 5,
+        priority: 'urgent',           // 加急
+    },
+
+    {
+        orderNo: 'SZ25121602435',
+        contractNo: 'HT2026-0116',
+        customer: '标兵母卷',
+        product: '电池箔成品',
+        alloy: '1060',
+        width: 1340,
+        thickness: 13,
+        lengthMin: 23000,
+        lengthMax: 24000,
+        coreSpec: '152.4管芯/壁厚4管芯',
+        coreLength: 1605,
+        innerDiameter: '152.4mm',
+        deliveryDate: '2026-03-10',
+        totalCoils: 10,
+        slittedCoils: 4,
+        remainingCoils: 6,
+        priority: 'normal',
+    },
+
+    {
+        orderNo: 'SZ25121602436',
+        contractNo: 'HT2026-0117',
+        customer: '优箔母卷',
+        product: '电池箔成品',
+        alloy: '1060',
+        width: 1200,
+        thickness: 13,
+        lengthMin: 28000,
+        lengthMax: 30000,
+        coreSpec: '152.4管芯/壁厚3管芯',
+        coreLength: 1578,
+        innerDiameter: '152.4mm',
+        deliveryDate: '2026-03-12',
+        totalCoils: 8,
+        slittedCoils: 2,
+        remainingCoils: 6,
+        priority: 'normal',
+    },
+
+    // ----------------------------------------------------------------
+    // 电池箔订单（合金: 1100）
+    // ----------------------------------------------------------------
+    {
+        orderNo: 'SZ26010800751',
+        contractNo: 'HT2026-0201',
+        customer: '江苏兴恒母卷',
+        product: '电池箔成品',
+        alloy: '1100',
+        width: 1200,
+        thickness: 10,
+        lengthMin: 21800,
+        lengthMax: 22200,
+        coreSpec: '152.4管芯/壁厚4管芯',
+        coreLength: 1478,
+        innerDiameter: '152.4mm',
+        deliveryDate: '2026-03-07',
+        totalCoils: 12,
+        slittedCoils: 5,
+        remainingCoils: 7,
+        priority: 'urgent',
+    },
+
+    {
+        orderNo: 'SZ26010800752',
+        contractNo: 'HT2026-0202',
+        customer: '江苏兴恒母卷',
+        product: '电池箔成品',
+        alloy: '1100',
+        width: 960,
+        thickness: 12,
+        lengthMin: 23500,
+        lengthMax: 24500,
+        coreSpec: '152.4管芯/壁厚4管芯',
+        coreLength: 1478,
+        innerDiameter: '152.4mm',
+        deliveryDate: '2026-03-15',
+        totalCoils: 6,
+        slittedCoils: 0,
+        remainingCoils: 6,
+        priority: 'normal',
+    },
+
+    // ----------------------------------------------------------------
+    // 电池箔订单（合金: 1235D）
+    // ----------------------------------------------------------------
+    {
+        orderNo: 'SZ25122200335',
+        contractNo: 'HT2026-0301',
+        customer: '精切标兵',
+        product: '电池箔成品',
+        alloy: '1235D',
+        width: 1270,
+        thickness: 12,
+        lengthMin: 23500,
+        lengthMax: 24500,
+        coreSpec: '76管芯/壁厚4管芯',
+        coreLength: 1478,
+        innerDiameter: '76.2mm',
+        deliveryDate: '2026-03-09',
+        totalCoils: 4,
+        slittedCoils: 0,
+        remainingCoils: 4,
+        priority: 'normal',
+    },
+
+    {
+        orderNo: 'SZ25122200336',
+        contractNo: 'HT2026-0302',
+        customer: '精切标兵',
+        product: '电池箔成品',
+        alloy: '1235D',
+        width: 750,
+        thickness: 12,
+        lengthMin: 21000,
+        lengthMax: 22000,
+        coreSpec: '76管芯/壁厚4管芯',
+        coreLength: 1478,
+        innerDiameter: '76.2mm',
+        deliveryDate: '2026-03-14',
+        totalCoils: 8,
+        slittedCoils: 3,
+        remainingCoils: 5,
+        priority: 'normal',
+    },
+
+    // ----------------------------------------------------------------
+    // 双零箔订单（合金: 8079）
+    // ----------------------------------------------------------------
+    {
+        orderNo: 'SZ26020100881',
+        contractNo: 'HT2026-0401',
+        customer: '精切',
+        product: '双零箔成品',
+        alloy: '8079',
+        width: 1530,
+        thickness: 6,
+        lengthMin: 44000,
+        lengthMax: 46000,
+        coreSpec: '76管芯/壁厚3管芯',
+        coreLength: 1580,
+        innerDiameter: '76.2mm',
+        deliveryDate: '2026-03-11',
+        totalCoils: 6,
+        slittedCoils: 0,
+        remainingCoils: 6,
+        priority: 'normal',
+    },
+
+    {
+        orderNo: 'SZ26020100882',
+        contractNo: 'HT2026-0402',
+        customer: '精切',
+        product: '双零箔成品',
+        alloy: '8079',
+        width: 760,
+        thickness: 6.5,
+        lengthMin: 40000,
+        lengthMax: 43000,
+        coreSpec: '76管芯/壁厚3管芯',
+        coreLength: 1580,
+        innerDiameter: '76.2mm',
+        deliveryDate: '2026-03-13',
+        totalCoils: 10,
+        slittedCoils: 4,
+        remainingCoils: 6,
+        priority: 'normal',
+    },
+
+    // ----------------------------------------------------------------
+    // 双零箔订单（合金: 1235）
+    // ----------------------------------------------------------------
+    {
+        orderNo: 'SZ26020500123',
+        contractNo: 'HT2026-0501',
+        customer: '优箔双零',
+        product: '双零箔成品',
+        alloy: '1235',
+        width: 1450,
+        thickness: 7,
+        lengthMin: 37000,
+        lengthMax: 39000,
+        coreSpec: '76管芯/壁厚3管芯',
+        coreLength: 1580,
+        innerDiameter: '76.2mm',
+        deliveryDate: '2026-03-16',
+        totalCoils: 4,
+        slittedCoils: 0,
+        remainingCoils: 4,
+        priority: 'normal',
+    },
+
+    {
+        orderNo: 'SZ26020500124',
+        contractNo: 'HT2026-0502',
+        customer: '优箔双零',
+        product: '双零箔成品',
+        alloy: '1235',
+        width: 680,
+        thickness: 7,
+        lengthMin: 36000,
+        lengthMax: 38000,
+        coreSpec: '76管芯/壁厚3管芯',
+        coreLength: 1580,
+        innerDiameter: '76.2mm',
+        deliveryDate: '2026-03-18',
+        totalCoils: 8,
+        slittedCoils: 2,
+        remainingCoils: 6,
+        priority: 'normal',
+    },
+]
