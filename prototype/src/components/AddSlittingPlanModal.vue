@@ -166,7 +166,8 @@
                     <div class="col-order">绑定订单</div>
                     <div class="col-width">宽度(mm)</div>
                     <div class="col-customer">客户</div>
-                    <div class="col-length">米数范围</div>
+                    <div class="col-length">订单米数范围</div>
+                    <div class="col-plan">本次计划</div>
                     <div class="col-core">订单要求</div>
                     <div class="col-note">说明</div>
                     <div class="col-action"></div>
@@ -230,6 +231,33 @@
                       <span v-if="seg.type === 'order' && seg.orderInfo" class="font-mono text-sm">
                         {{ seg.orderInfo.lengthMin }}~{{ seg.orderInfo.lengthMax }}m
                       </span>
+                      <span v-else class="col-dash">—</span>
+                    </div>
+
+                    <!-- 本次计划：本次切几卷 + 目标米数（仅订单类型） -->
+                    <div class="col-plan">
+                      <template v-if="seg.type === 'order'">
+                        <div class="plan-inputs">
+                          <input
+                            type="number"
+                            v-model="seg.planCoils"
+                            class="form-input seg-input text-right font-mono"
+                            min="1"
+                            placeholder="卷数"
+                            title="本次计划切制卷数"
+                          />
+                          <span class="plan-sep">卷</span>
+                          <input
+                            type="number"
+                            v-model="seg.planLengthMin"
+                            class="form-input seg-input text-right font-mono"
+                            min="0"
+                            placeholder="目标米"
+                            title="本次单卷目标米数"
+                          />
+                          <span class="plan-sep">m</span>
+                        </div>
+                      </template>
                       <span v-else class="col-dash">—</span>
                     </div>
 
@@ -440,13 +468,14 @@ const baseAvailableOrders = computed(() => {
   )
 })
 
-// 某一段的可用订单（排除其他段已选的）
+// 订单下拉选项：欠单加红色标记
 function getAvailableOrderOptions(seg) {
   return baseAvailableOrders.value
     .filter(o => !usedOrderNos.value.includes(o.orderNo) || o.orderNo === seg.orderInfo?.orderNo)
     .map(o => ({
       value: o.orderNo,
-      label: `${o.orderNo}  ${o.customer}  ${o.width}mm  (${o.lengthMin}~${o.lengthMax}m)`
+      // 急单加 🔴 标记，便于计划员识别
+      label: `${o.priority === 'urgent' ? '🔴 ' : ''}${o.orderNo}  ${o.customer}  ${o.width}mm`
     }))
 }
 
@@ -608,10 +637,19 @@ const wasteRate = computed(() => {
   return (((mw - orderWidth) / mw) * 100).toFixed(1)
 })
 
+// 废料率阈值按产品类型区分
+// 电池箔要求更严：宽度利用率 ≥95%（废料≤5%），双零箔较宽松：废料≤10%
+function wasteThresholds() {
+  const pt = selectedMaterial.value?.productType
+  if (pt === '电池箔') return { good: 5, warn: 10 }   // 电池箔更严
+  return { good: 8, warn: 15 }                          // 双零箔等其他
+}
+
 const wasteRateClass = computed(() => {
   const r = parseFloat(wasteRate.value)
-  if (r <= 5) return 'green'
-  if (r > 15) return 'red'
+  const { good, warn } = wasteThresholds()
+  if (r <= good) return 'green'
+  if (r > warn) return 'red'
   return 'orange'
 })
 
@@ -638,20 +676,57 @@ watch(() => props.visible, (val) => {
   }
 })
 
-// ─── 操作 ────────────────────────────────────────────────
+// ─── 待评审确认 + 提交逻辑 ─────────────────────────────
 function closeModal() {
   emit('close')
 }
 
+function handleSubmitClick() {
+  if (!canSubmit.value) return
+  // 待评审时弹原生 confirm（原型简化处理，实际可替换为自定义弹窗）
+  if (selectedMaterial.value?.reviewStatus === 'pending') {
+    const ok = window.confirm('该母卷尚未完成质量评审，确定仍要提交分切计划？\n（计划将被标记为“待评审”状态，评审通过后方可执行）')
+    if (!ok) return
+  }
+  submitForm()
+}
+
 function submitForm() {
   if (!canSubmit.value) return
+  // 构建完整计划数据，便于写入列表
+  const orderSegs = segments.filter(s => s.type === 'order' && s.orderInfo)
+  const firstOrder = orderSegs[0]
   const submitData = {
-    coilNo: selectedCoilNo.value,
+    // 列表展示字段
+    id: `SP${Date.now()}`,
     machineId: selectedMachineId.value,
-    material: selectedMaterial.value,
-    segments: Array.from(segments),
-    wasteRate: wasteRate.value,
-    planNote: planNote.value
+    motherCoilNo: selectedCoilNo.value,
+    alloy: selectedMaterial.value.alloy,
+    productType: selectedMaterial.value.productType,
+    width: selectedMaterial.value.width,
+    thickness: selectedMaterial.value.thickness,
+    orderNo: firstOrder?.orderInfo?.orderNo || null,
+    customer: firstOrder?.orderInfo?.customer || null,
+    reviewStatus: selectedMaterial.value.reviewStatus,
+    cuttingPlan: {
+      // 切刀规格：多订单拼接展示
+      spec: orderSegs.map(s => `${s.orderInfo.thickness ?? selectedMaterial.value.thickness}×${s.width}${selectedMaterial.value.productType}`).join(' + '),
+      wasteRate: parseFloat(wasteRate.value),
+      orderReq: firstOrder?.orderReq || '',
+      segments: segments.map(s => ({
+        type: s.type,
+        width: s.width,
+        orderId: s.orderId,
+        orderReq: s.orderReq,
+        planCoils: s.planCoils,
+        planLengthMin: s.planLengthMin,
+        note: s.note,
+        label: s.type === 'order' && s.orderInfo ? s.orderInfo.customer : (s.note || '')
+      }))
+    },
+    planNote: planNote.value,
+    status: selectedMaterial.value.reviewStatus === 'pending' ? 'pending_review' : 'planned',
+    planDate: new Date().toISOString().slice(0, 10)
   }
   emit('submit', submitData)
 }
@@ -1082,13 +1157,14 @@ function submitForm() {
 .seg-row-edge { background: #f8fafc; }
 
 /* 列宽 */
-.col-tag    { width: 56px;  flex-shrink: 0; }
-.col-order  { width: 200px; flex-shrink: 0; }
-.col-width  { width: 80px;  flex-shrink: 0; }
-.col-customer { flex: 1; min-width: 80px; }
-.col-length { width: 130px; flex-shrink: 0; }
-.col-core   { width: 140px; flex-shrink: 0; }
-.col-note   { flex: 1; min-width: 100px; }
+.col-tag    { width: 52px;  flex-shrink: 0; }
+.col-order  { width: 188px; flex-shrink: 0; }
+.col-width  { width: 72px;  flex-shrink: 0; }
+.col-customer { width: 80px; flex-shrink: 0; }
+.col-length { width: 120px; flex-shrink: 0; }
+.col-plan   { width: 160px; flex-shrink: 0; }
+.col-core   { width: 130px; flex-shrink: 0; }
+.col-note   { flex: 1; min-width: 80px; }
 .col-action { width: 30px; flex-shrink: 0; display: flex; justify-content: center; }
 
 /* 类型标签 */
@@ -1118,6 +1194,24 @@ function submitForm() {
   width: 100%;
   font-size: 0.78rem;
   padding: 0.3rem 0.45rem;
+}
+
+/* 本次计划双输入框布局 */
+.plan-inputs {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.plan-inputs .seg-input {
+  width: 52px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.35rem;
+}
+.plan-sep {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 /* CustomSelect 在段内的尺寸覆盖 */

@@ -67,12 +67,20 @@
             </td>
             <!-- 切刀规格 -->
             <td>
-              <span v-if="row.cuttingPlan" class="text-sm font-mono cutting-spec">{{ row.cuttingPlan.spec }}</span>
+              <template v-if="row.cuttingPlan">
+                <!-- 多订单段时拼接展示，单订单回退 spec 字符串 -->
+                <span
+                  class="text-sm font-mono cutting-spec"
+                  :title="row.cuttingPlan.spec"
+                >
+                  {{ cuttingSpecLabel(row.cuttingPlan) }}
+                </span>
+              </template>
               <span v-else class="text-muted text-sm">—</span>
             </td>
             <!-- 废料率 -->
             <td>
-              <span v-if="row.cuttingPlan" class="waste-rate" :class="wasteRateClass(row.cuttingPlan.wasteRate)">
+              <span v-if="row.cuttingPlan" class="waste-rate" :class="wasteRateClass(row.cuttingPlan.wasteRate, row.productType)">
                 {{ row.cuttingPlan.wasteRate }}%
               </span>
               <span v-else class="text-muted text-sm">—</span>
@@ -135,11 +143,26 @@ function statusLabel(status) {
   return map[status] || status
 }
 
-function wasteRateClass(rate) {
+// 切刀规格标签：多订单段拼接展示
+function cuttingSpecLabel(cuttingPlan) {
+  if (cuttingPlan.segments) {
+    const orderSegs = cuttingPlan.segments.filter(s => s.type === 'order' && s.width)
+    if (orderSegs.length > 1) {
+      return orderSegs.map(s => `${s.width}mm`).join('+') + ' 多订单'
+    }
+  }
+  return cuttingPlan.spec || '—'
+}
+
+// 废料率阈值按产品类型区分
+function wasteRateClass(rate, productType) {
   const r = parseFloat(rate)
   if (isNaN(r)) return ''
-  if (r <= 5) return 'green'
-  if (r > 15) return 'red'
+  // 电池箔要求更严：≤ 5% 绿色，> 10% 红色
+  const good = productType === '电池箔' ? 5 : 8
+  const warn = productType === '电池箔' ? 10 : 15
+  if (r <= good) return 'green'
+  if (r > warn) return 'red'
   return 'orange'
 }
 

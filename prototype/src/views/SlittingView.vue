@@ -121,7 +121,11 @@ import SlittingDetailPanel from '../components/SlittingDetailPanel.vue'
 import AddSlittingPlanModal from '../components/AddSlittingPlanModal.vue'
 import ToastNotification from '../components/ToastNotification.vue'
 import CustomSelect from '../components/CustomSelect.vue'
-import { slittingPlans, slittingMachines } from '../data/mock.js'
+import { slittingPlans as rawPlans, slittingMachines } from '../data/mock.js'
+
+// 使用 ref 包裹以支持动态新增
+import { reactive } from 'vue'
+const slittingPlans = reactive([...rawPlans])
 
 // 下拉选项
 const machineOptions = computed(() => [
@@ -206,8 +210,11 @@ function handleView(row) {
 }
 
 function handleAddSubmit(formData) {
+  // 将新计划插入列表头部，实现演示闭环
+  slittingPlans.unshift(formData)
   addModalVisible.value = false
-  toastMessage.value = '分切计划添加成功！'
+  const statusLabel = formData.status === 'pending_review' ? '待评审' : '计划中'
+  toastMessage.value = `分切计划添加成功！状态：${statusLabel}`
   toastVisible.value = true
 }
 </script>
