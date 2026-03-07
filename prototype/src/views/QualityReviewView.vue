@@ -8,7 +8,7 @@
       <h1 class="page-title">质量评审录入：<span class="font-mono">{{ coil?.coilNo }}</span></h1>
       <div class="actions">
         <button class="btn-secondary" :disabled="isReadOnly">保存草稿</button>
-        <button class="btn-primary" :disabled="isReadOnly">提交评审</button>
+        <button class="btn-primary" :disabled="isReadOnly" @click="submitReview">提交评审</button>
       </div>
     </div>
 
@@ -244,6 +244,76 @@
               </div>
             </div>
           </section>
+
+          <!-- 三、处理指令 -->
+          <section class="form-section">
+            <h3 class="section-title with-border">三、处理指令</h3>
+            <div class="table-responsive">
+              <table class="instructions-table">
+                <thead>
+                  <tr>
+                    <th width="40" class="text-center">#</th>
+                    <th width="120">缺陷类型</th>
+                    <th width="90">位置侧</th>
+                    <th width="100">起始(mm)</th>
+                    <th width="100">终止(mm)</th>
+                    <th width="100">长位(m)</th>
+                    <th width="120">处理方式</th>
+                    <th width="60" class="text-center" v-if="!isReadOnly">操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(inst, idx) in form.instructions" :key="idx">
+                    <td class="text-center">{{ idx + 1 }}</td>
+                    <td>
+                      <select v-model="inst.defectType" class="form-control" :disabled="isReadOnly">
+                        <option value="">请选择...</option>
+                        <option v-for="opt in defectTypeOptions" :key="opt" :value="opt">{{ opt }}</option>
+                      </select>
+                    </td>
+                    <td>
+                      <select v-model="inst.locationSide" class="form-control" :disabled="isReadOnly">
+                        <option v-for="opt in locationSideOptions" :key="opt" :value="opt">{{ opt }}</option>
+                      </select>
+                    </td>
+                    <td><input type="number" v-model.number="inst.startMm" class="form-control" :disabled="isReadOnly"></td>
+                    <td><input type="number" v-model.number="inst.endMm" class="form-control" :disabled="isReadOnly"></td>
+                    <td><input type="number" v-model.number="inst.lengthPosM" class="form-control" placeholder="可选" :disabled="isReadOnly"></td>
+                    <td>
+                      <select v-model="inst.treatment" class="form-control" :disabled="isReadOnly">
+                        <option value="">请选择...</option>
+                        <option v-for="opt in treatmentOptions" :key="opt" :value="opt">{{ opt }}</option>
+                      </select>
+                    </td>
+                    <td class="text-center" v-if="!isReadOnly">
+                      <button class="btn-icon danger" @click="removeInstruction(idx)" title="删除">✕</button>
+                    </td>
+                  </tr>
+                  <tr v-if="form.instructions.length === 0">
+                    <td :colspan="isReadOnly ? 7 : 8" class="text-center empty-instructions">暂无处理指令</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <button v-if="!isReadOnly" class="btn-outline mt-md" @click="addInstruction">+ 添加处理指令</button>
+          </section>
+
+          <!-- 四、评审备注 -->
+          <section class="form-section">
+            <h3 class="section-title with-border">四、评审备注</h3>
+            <textarea v-model="form.note" class="form-control textarea mb-md" rows="3" placeholder="可选备注..." :disabled="isReadOnly"></textarea>
+            
+            <div class="review-meta">
+              <div class="meta-item">
+                <span class="label">评审人:</span>
+                <span class="value">{{ form.reviewer }}</span>
+              </div>
+              <div class="meta-item">
+                <span class="label">评审时间:</span>
+                <span class="value">{{ form.reviewTime ? formatTime(form.reviewTime) : '提交后自动更新' }}</span>
+              </div>
+            </div>
+          </section>
         </template>
       </main>
     </div>
@@ -259,7 +329,10 @@ import {
   createEmptyReview,
   mainConclusionOptions,
   deliveryTargetOptions,
-  qualityReviews
+  qualityReviews,
+  defectTypeOptions,
+  locationSideOptions,
+  treatmentOptions
 } from '../data/quality-review-data'
 
 const router = useRouter()
@@ -287,6 +360,40 @@ onMounted(() => {
 
 const isReadOnly = computed(() => coil.value?.status === 'reviewed')
 
+
+// Form Handlers
+function addInstruction() {
+  form.value.instructions.push({
+    defectType: '', 
+    locationSide: 'Q侧',
+    startMm: null, 
+    endMm: null, 
+    lengthPosM: null, 
+    treatment: ''
+  })
+}
+
+function removeInstruction(idx) {
+  form.value.instructions.splice(idx, 1)
+}
+
+function submitReview() {
+  if (!form.value.mainConclusion) {
+    alert('请填写主评审结论！')
+    return
+  }
+  
+  if (coil.value) {
+    // 模拟提交时间
+    form.value.reviewTime = new Date().toISOString()
+    
+    // 更新状态
+    coil.value.status = 'reviewed'
+    qualityReviews[coil.value.id] = JSON.parse(JSON.stringify(form.value))
+    
+    router.push('/quality')
+  }
+}
 
 // Time formatting utilities
 function formatTime(dateString) {
@@ -685,5 +792,102 @@ label {
   font-size: 0.95rem;
   color: var(--text-main);
   font-weight: 600;
+}
+
+/* 动态操作表格和备注 */
+.table-responsive {
+  overflow-x: auto;
+}
+
+.instructions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.instructions-table th, .instructions-table td {
+  padding: 0.65rem 0.5rem;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 0.9rem;
+}
+
+.instructions-table th {
+  color: var(--text-secondary);
+  font-weight: 500;
+  border-bottom-width: 2px;
+}
+
+.text-center { text-align: center !important; }
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.2s;
+}
+
+.btn-icon.danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+  color: var(--danger-color, #ef4444);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px dashed var(--border-light);
+  color: var(--primary-color);
+  padding: 0.6rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.btn-outline:hover {
+  border-color: var(--primary-color);
+  background-color: var(--primary-light);
+}
+
+.empty-instructions {
+  color: var(--text-muted);
+  padding: 2rem !important;
+}
+
+.mb-md { margin-bottom: 1rem; }
+
+.review-meta {
+  display: flex;
+  gap: 2rem;
+  background-color: var(--bg-hover);
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+}
+
+.meta-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.85rem;
+}
+
+.meta-item .label {
+  color: var(--text-secondary);
+}
+
+.meta-item .value {
+  color: var(--text-main);
+  font-weight: 500;
+}
+
+/* Review disabled fixes */
+.radio-label input[type="radio"]:disabled + .radio-text {
+  color: var(--text-muted);
 }
 </style>
