@@ -22,6 +22,10 @@
           </router-link>
           <router-link to="/finishing" class="menu-item" active-class="active">
             <Crosshair :size="18" class="icon" />
+            <span class="title" v-if="!isCollapsed">旧版精切(供参考)</span>
+          </router-link>
+          <router-link to="/precision-cutting" class="menu-item" active-class="active">
+            <Microscope :size="18" class="icon" />
             <span class="title" v-if="!isCollapsed">精切排产</span>
           </router-link>
         </div>
@@ -74,7 +78,8 @@ import {
   ChevronDown,
   ChevronRight,
   PanelLeftClose,
-  PanelLeftOpen
+  PanelLeftOpen,
+  Microscope
 } from 'lucide-vue-next'
 
 const isCollapsed = ref(false)

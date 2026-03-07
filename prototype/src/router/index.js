@@ -25,6 +25,11 @@ const routes = [
                 path: 'finishing',
                 name: 'Finishing',
                 component: () => import('../views/FinishingView.vue')
+            },
+            {
+                path: 'precision-cutting',
+                name: 'PrecisionCutting',
+                component: () => import('../views/PrecisionCuttingView.vue')
             }
         ]
     }
