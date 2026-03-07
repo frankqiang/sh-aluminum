@@ -2,10 +2,7 @@
   <div class="view-container">
     <header class="view-header">
       <div class="header-left">
-        <h1 class="view-title">
-          <Microscope stroke-width="2.5" :size="24" class="title-icon" />
-          精切排产
-        </h1>
+        <h1 class="view-title">精切排产</h1>
         <p class="view-subtitle">精切机台的生产计划，接续分切工序产出的半成品子卷</p>
       </div>
       
@@ -127,7 +124,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { 
-  Microscope, Plus, CalendarDays, Search, Printer, Server, ListFilter, Users 
+  Plus, CalendarDays, Search, Printer, Server, ListFilter, Users 
 } from 'lucide-vue-next'
 import { precisionPlans } from '../data/mock.js'
 
@@ -315,19 +312,12 @@ function handleSubmit(formData) {
 }
 
 .view-title {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
   font-family: var(--font-display);
   font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-main);
   letter-spacing: -0.02em;
   margin: 0;
-}
-
-.title-icon {
-  color: var(--primary-color);
 }
 
 .view-subtitle {

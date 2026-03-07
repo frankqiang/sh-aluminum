@@ -658,11 +658,10 @@ function submitForm() {
   box-shadow: var(--shadow-xl);
   width: 100%;
   max-width: 900px; /* 专为精切界面设计的宽度 */
-  max-height: 94vh;
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  border: 1px solid var(--border-medium);
 }
 
 .modal-header {
