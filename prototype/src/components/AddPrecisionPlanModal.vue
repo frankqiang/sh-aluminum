@@ -1,0 +1,1216 @@
+<template>
+  <Teleport to="body">
+    <Transition name="modal-fade">
+      <div v-if="visible" class="modal-overlay" @click.self="closeModal">
+        <Transition name="modal-scale">
+          <div v-if="visible" class="modal-content" role="dialog" aria-modal="true">
+
+            <!-- 弹窗头部 -->
+            <div class="modal-header">
+              <div class="modal-title-row">
+                <Microscope :size="18" class="title-icon" />
+                <h3 class="modal-title">新增精切计划</h3>
+              </div>
+              <button class="close-btn" @click="closeModal" title="关闭">
+                <X :size="20" />
+              </button>
+            </div>
+
+            <div class="modal-body">
+
+              <!-- ❶ 来料选择区 -->
+              <div class="section-block">
+                <div class="section-label">
+                  <span class="section-num">①</span> 来料选择
+                </div>
+                <div class="select-row">
+                  <div class="form-group flex-2">
+                    <label>子卷号 <span class="required">*</span></label>
+                    <CustomSelect
+                      v-model="selectedSubCoilNo"
+                      :options="subCoilOptions"
+                      placeholder="选择待精切子卷"
+                    />
+                  </div>
+                  <div class="form-group flex-1">
+                    <label>机台设备 <span class="required">*</span></label>
+                    <CustomSelect
+                      v-model="selectedMachineId"
+                      :options="machineOptions"
+                      placeholder="选择精切机"
+                    />
+                  </div>
+                </div>
+
+                <!-- 子卷自动带出信息（只读） -->
+                <Transition name="fade-in">
+                  <div v-if="selectedMaterial" class="material-info-bar">
+                    <div class="info-chip">
+                      <span class="chip-label">合金</span>
+                      <span class="chip-val font-mono">{{ selectedMaterial.alloy }}</span>
+                    </div>
+                    <div class="info-chip">
+                      <span class="chip-label">产品</span>
+                      <span class="chip-val" :class="productClass(selectedMaterial.productType)">
+                        {{ selectedMaterial.productType }}
+                      </span>
+                    </div>
+                    <div class="info-chip">
+                      <span class="chip-label">宽度</span>
+                      <span class="chip-val font-mono">{{ selectedMaterial.width }}<span class="chip-unit">mm</span></span>
+                    </div>
+                    <div class="info-chip">
+                      <span class="chip-label">厚度</span>
+                      <span class="chip-val font-mono">{{ selectedMaterial.thickness }}<span class="chip-unit">μm</span></span>
+                    </div>
+                    <div class="info-chip">
+                      <span class="chip-label">长度</span>
+                      <span class="chip-val font-mono">{{ selectedMaterial.length }}<span class="chip-unit">m</span></span>
+                    </div>
+                    <div class="info-chip">
+                      <span class="chip-label">框号</span>
+                      <span class="chip-val font-mono font-bold">{{ selectedMaterial.frameNo }}</span>
+                    </div>
+                  </div>
+                </Transition>
+              </div>
+
+              <!-- ❷ 质量评审区（只读参考） -->
+              <Transition name="fade-in">
+                <div v-if="selectedMaterial" class="section-block review-block">
+                  <div class="section-label">
+                    <span class="section-num">②</span> 分切质量评审
+                    <span class="review-status-tag" :class="selectedMaterial.reviewStatus">
+                      {{ reviewStatusLabel(selectedMaterial.reviewStatus) }}
+                    </span>
+                  </div>
+
+                  <!-- 待评审警告 -->
+                  <div v-if="selectedMaterial.reviewStatus === 'pending'" class="review-warning">
+                    <AlertTriangle :size="15" />
+                    <span>该子卷尚未完成质量评审，排定计划后需等待评审通过才能执行生产！</span>
+                  </div>
+                  <!-- 未提交提示 -->
+                  <div v-else-if="selectedMaterial.reviewStatus === 'none'" class="review-warning none">
+                    <Info :size="15" />
+                    <span>该子卷尚未提交质量评审，可能存在未识别的缺陷。</span>
+                  </div>
+
+                  <!-- 已评审展示 -->
+                  <div v-else-if="selectedMaterial.review" class="review-content-row">
+                    <div class="review-left">
+                      <div class="review-info-item">
+                        <span class="review-key">主结论</span>
+                        <span class="review-val conclusion" :class="{'text-warning': selectedMaterial.review.conclusion !== '正常处理'}">
+                          {{ selectedMaterial.review.conclusion }}
+                        </span>
+                      </div>
+                      <div class="review-info-item mt-2">
+                        <span class="review-key">等级</span>
+                        <span class="review-val" :class="gradeClass(selectedMaterial.review.grade)">
+                          {{ selectedMaterial.review.grade }}
+                        </span>
+                      </div>
+                    </div>
+                    <div class="review-right">
+                      <!-- 处理指令 -->
+                      <div v-if="selectedMaterial.review.instructions && selectedMaterial.review.instructions.length > 0" class="instructions-area">
+                        <span class="review-key" style="margin-bottom: 4px; display: block;">缺陷明细与指令</span>
+                        <div class="instruction-list">
+                          <div
+                            v-for="(inst, idx) in selectedMaterial.review.instructions"
+                            :key="idx"
+                            class="inst-item"
+                          >
+                            <Ruler v-if="inst.locationType === 'length'" :size="14" class="inst-icon length-icon" />
+                            <ArrowLeftRight v-else-if="inst.locationType === 'width'" :size="14" class="inst-icon width-icon" />
+                            
+                            <template v-if="inst.locationType === 'width'">
+                              <span class="inst-side">{{ inst.side }}</span>
+                              <span class="inst-range font-mono">{{ inst.position }}mm</span>
+                            </template>
+                            <template v-else-if="inst.locationType === 'length'">
+                              <span class="inst-side">{{ inst.locationDesc }}</span>
+                            </template>
+                            
+                            <span class="inst-defect">{{ inst.defectType }}</span>
+                            <ArrowRight :size="11" class="inst-arrow" />
+                            <span class="inst-action">{{ inst.action }}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div v-else class="no-defect-tip">
+                        <CheckCircle :size="14" />
+                        <span>无缺陷处理指令，质量判定正常</span>
+                      </div>
+                    </div>
+                    <!-- 有效宽度 -->
+                    <div class="effective-width-block">
+                      <span class="ew-label">有效宽度</span>
+                      <span class="ew-value font-mono">{{ effectiveWidth }}</span>
+                      <span class="ew-unit">mm</span>
+                      <span v-if="effectiveWidth < selectedMaterial.width" class="ew-diff error-zone">
+                         (较原始 {{ selectedMaterial.width }}mm，已减少 {{ selectedMaterial.width - effectiveWidth }}mm)
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Transition>
+
+              <!-- ❸ 精切方案设计区 -->
+              <div class="section-block">
+                <div class="section-label">
+                  <span class="section-num">③</span> 精切方案设计
+                </div>
+
+                <div v-if="!selectedMaterial" class="no-material-tip">
+                  <Info :size="14" />
+                  <span>请先选择待精切子卷，随后配置电晕并设计切割方案</span>
+                </div>
+
+                <template v-else>
+                  <!-- 电晕设置 -->
+                  <div class="corona-setting-row mb-4">
+                    <span class="setting-label">电晕要求（固定达因值≥33）：</span>
+                    <label class="radio-label">
+                      <input type="radio" v-model="coronaPasses" :value="1" name="coronaGroup"> 1 遍
+                    </label>
+                    <label class="radio-label">
+                      <input type="radio" v-model="coronaPasses" :value="2" name="coronaGroup"> 2 遍
+                    </label>
+                  </div>
+
+                  <div class="segments-area-header mb-2 flex-between">
+                    <div class="sub-title">段列表设计:</div>
+                    <button class="add-seg-btn btn-sm" @click="addOrderSegment">
+                      <Plus :size="13" /> 添加订单段
+                    </button>
+                  </div>
+
+                  <!-- 段列表表头 -->
+                  <div class="segments-header">
+                    <div class="col-tag">顺序</div>
+                    <div class="col-type">类型</div>
+                    <div class="col-order">绑定订单</div>
+                    <div class="col-width text-right">宽度(mm)</div>
+                    <div class="col-customer">客户 / 米数</div>
+                    <div class="col-action text-right">操作</div>
+                  </div>
+
+                  <!-- 段列表 -->
+                  <div
+                    v-for="(seg, idx) in segments"
+                    :key="seg.id"
+                    class="segment-row"
+                    :class="`seg-row-${seg.type}`"
+                  >
+                    <!-- 顺序编号 -->
+                    <div class="col-tag">
+                       <span class="seq-badge" v-if="seg.type === 'order'">{{ getOrderDisplayIndex(seg.id) }}</span>
+                    </div>
+
+                    <!-- 类型标签（只读） -->
+                    <div class="col-type">
+                      <span class="seg-type-tag" :class="seg.type">
+                        {{ segTypeLabel(seg.type) }}
+                      </span>
+                    </div>
+
+                    <!-- 绑定订单（仅订单类型） -->
+                    <div class="col-order">
+                      <template v-if="seg.type === 'order'">
+                        <CustomSelect
+                          v-model="seg.orderId"
+                          :options="getAvailableOrderOptions(seg)"
+                          placeholder="选择订单"
+                          class="order-select"
+                          @update:modelValue="(val) => onOrderSelected(seg, val)"
+                        />
+                      </template>
+                      <span v-else class="col-dash text-muted">—</span>
+                    </div>
+
+                    <!-- 宽度 -->
+                    <div class="col-width text-right">
+                      <!-- 边丝：可调整 -->
+                      <input
+                        v-if="seg.type === 'edge'"
+                        type="number"
+                        v-model="seg.width"
+                        class="form-input seg-input text-right font-mono full-w"
+                        min="0"
+                        max="30"
+                      />
+                      <!-- 订单：只读 -->
+                      <span v-else class="readonly-val font-mono">
+                        {{ seg.width ?? '—' }}
+                      </span>
+                    </div>
+
+                    <!-- 客户/米数（仅订单类型，只读） -->
+                    <div class="col-customer text-sm text-secondary">
+                      <template v-if="seg.type === 'order' && seg.orderInfo">
+                        {{ seg.orderInfo.customer }} <span class="text-xs text-muted ml-1">({{ seg.orderInfo.lengthMin }}-{{ seg.orderInfo.lengthMax }}m)</span>
+                      </template>
+                      <span v-else class="col-dash">—</span>
+                    </div>
+
+                    <!-- 删除 -->
+                    <div class="col-action text-right">
+                      <button v-if="seg.type === 'order'" class="icon-btn delete" @click="removeSegment(idx)" title="移除此订单">
+                        <Trash2 :size="15" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 实时计算区 -->
+                  <div class="calc-summary mt-4" :class="{ 'has-error': isOverEffective, 'has-warn': isOverTotal && !isOverEffective }">
+                    <div class="calc-item">
+                      <span class="calc-label">子卷宽度</span>
+                      <span class="calc-val font-mono">{{ selectedMaterial.width }}</span>
+                      <span class="calc-unit">mm</span>
+                    </div>
+                    <div class="calc-sep">|</div>
+                    <div class="calc-item" title="评审指令排查出的无缺陷理想区宽度">
+                      <span class="calc-label">有效宽度</span>
+                      <span class="calc-val font-mono text-primary">{{ effectiveWidth }}</span>
+                      <span class="calc-unit">mm</span>
+                    </div>
+                    <div class="calc-sep">|</div>
+                    <div class="calc-item">
+                      <span class="calc-label">已分配(边丝+订单)</span>
+                      <span class="calc-val font-mono">{{ totalAllocated }}</span>
+                      <span class="calc-unit">mm</span>
+                    </div>
+                    <div class="calc-sep">|</div>
+                    <div class="calc-item">
+                      <span class="calc-label">剩余(余料产生)</span>
+                      <span class="calc-val font-mono" :class="{ 'text-error': remaining < 0, 'text-muted': remaining >= 0 }">
+                        {{ remaining }}
+                      </span>
+                      <span class="calc-unit">mm</span>
+                    </div>
+                    <div class="calc-sep">|</div>
+                    <div class="calc-item">
+                      <span class="calc-label">预计废料率</span>
+                      <span class="waste-rate-badge" :class="wasteRateClass">{{ wasteRate }}%</span>
+                    </div>
+                  </div>
+
+                  <!-- 错误 / 警告提示 (校验逻辑变化) -->
+                  <div v-if="hasSingleOrderOverEffectiveWidth" class="alert-msg error">
+                    <AlertCircle :size="14" />
+                    <span>有单个订单卡的宽度超出了子卷的可用【有效宽度】({{ effectiveWidth }}mm)，无法切出合格品，请更换订单。</span>
+                  </div>
+                  <div v-else-if="isOverTotal" class="alert-msg warn">
+                    <AlertTriangle :size="14" />
+                    <span>当前订单段组合总宽（+双边丝）超出子卷物理总宽，将自动采用【多订单长度顺序切模式】，会产生较高废料。</span>
+                  </div>
+                </template>
+              </div>
+
+              <!-- ❹ 顺序说明（多订单时显示） -->
+              <Transition name="fade-in">
+                <div class="section-block" v-if="selectedMaterial && orderSegCount > 1">
+                  <div class="section-label text-warning">
+                    <span class="section-num warning-bg">④</span> 多订单切割顺序说明 <span class="optional">（必填）</span>
+                  </div>
+                  <textarea
+                    v-model="seqReason"
+                    class="form-textarea border-warning"
+                    placeholder="如：底部有5800米缺陷，先切短单（弘力）消化缺陷，后再切源元..."
+                    rows="2"
+                  ></textarea>
+                </div>
+              </Transition>
+
+              <!-- ❺ 计划备注 -->
+              <div class="section-block" v-if="selectedMaterial">
+                <div class="section-label">
+                  <span class="section-num">{{ orderSegCount > 1 ? '⑤' : '④' }}</span> 计划备注 <span class="optional">（选填）</span>
+                </div>
+                <textarea
+                  v-model="planNote"
+                  class="form-textarea"
+                  placeholder="其他执行说明..."
+                  rows="2"
+                ></textarea>
+              </div>
+
+            </div><!-- /modal-body -->
+
+            <!-- 底部按钮 -->
+            <div class="modal-footer">
+              <div class="footer-hint" v-if="!canSubmit && selectedMaterial">
+                <span v-if="!selectedMachineId">请选择机台</span>
+                <span v-else-if="orderSegCount === 0">请至少添加一个精切段</span>
+                <span v-else-if="hasSingleOrderOverEffectiveWidth">存在单个订单超宽错误</span>
+                <span v-else-if="orderSegCount > 1 && !seqReason.trim()">请填写切割顺序说明</span>
+              </div>
+              <div class="footer-actions">
+                <button class="btn secondary" @click="closeModal">取消</button>
+                <button class="btn primary" :disabled="!canSubmit" @click="submitForm">
+                  确认添加
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </Transition>
+      </div>
+    </Transition>
+  </Teleport>
+</template>
+
+<script setup>
+import { ref, computed, reactive, watch } from 'vue'
+import {
+  X, Plus, Trash2, AlertCircle, AlertTriangle, ArrowRight, ArrowLeftRight, Ruler,
+  CheckCircle, Info, Microscope
+} from 'lucide-vue-next'
+import CustomSelect from './CustomSelect.vue'
+import { precisionMaterialPool } from '../data/precision-material-pool.js'
+import { orderPool } from '../data/order-pool.js'
+
+const props = defineProps({
+  visible: Boolean
+})
+
+const emit = defineEmits(['close', 'submit'])
+
+// ─── 状态 ───────────────────────────────────────────────
+const selectedSubCoilNo = ref('')
+const selectedMachineId = ref('')
+const coronaPasses = ref(1)
+const seqReason = ref('')
+const planNote = ref('')
+
+// 机台写死 1-49
+const machineOptions = Array.from({ length: 49 }, (_, i) => ({
+  value: (i + 1).toString(),
+  label: `${i + 1}# 精切机`
+}))
+
+// 动态段列表（首尾固定两边丝，中间加无数订单段）
+const segments = reactive([
+  { id: 1, type: 'edge', label: '左边', width: 8, orderId: null, orderInfo: null },
+  { id: 2, type: 'edge', label: '右边', width: 8, orderId: null, orderInfo: null }
+])
+
+// ─── 子卷选项 ────────────────────────────────────────────
+const subCoilOptions = computed(() =>
+  precisionMaterialPool.map(m => ({
+    value: m.subCoilNo,
+    label: `${m.subCoilNo}  （${m.alloy} · ${m.width}mm · ${m.frameNo}框）`
+  }))
+)
+
+// 选中的子卷完整信息
+const selectedMaterial = computed(() =>
+  precisionMaterialPool.find(m => m.subCoilNo === selectedSubCoilNo.value) || null
+)
+
+// ─── 质量评审 ────────────────────────────────────────────
+const effectiveWidth = computed(() => {
+  if (!selectedMaterial.value) return 0
+  return selectedMaterial.value.review?.effectiveWidth ?? selectedMaterial.value.width
+})
+
+function reviewStatusLabel(status) {
+  if (status === 'reviewed') return '✅ 已评审'
+  if (status === 'pending') return '⚠️ 待评审'
+  return '❌ 未提交'
+}
+
+function productClass(type) {
+  if (type === '电池箔') return 'badge-battery'
+  if (type === '双零箔') return 'badge-double'
+  return ''
+}
+
+function gradeClass(grade) {
+  if (grade === '二级品') return 'text-warning'
+  return 'text-success'
+}
+
+// ─── 订单处理 ─────────────────────────────────────────────
+// 用过的订单
+const usedOrderNos = computed(() =>
+  segments.filter(s => s.orderInfo).map(s => s.orderInfo.orderNo)
+)
+
+// 拿到可用的订单过滤
+function getAvailableOrderOptions(seg) {
+  if (!selectedMaterial.value) return []
+  const alloy = selectedMaterial.value.alloy
+  const ew = effectiveWidth.value
+
+  const availableList = orderPool.filter(o =>
+    o.alloy === alloy &&
+    o.width <= ew &&
+    (!usedOrderNos.value.includes(o.orderNo) || o.orderNo === seg.orderInfo?.orderNo)
+  )
+
+  return availableList.map(o => ({
+    value: o.orderNo,
+    label: `${o.orderNo}  ${o.customer}  ${o.width}mm (${o.lengthMin}-${o.lengthMax}m)`
+  }))
+}
+
+// 选中
+function onOrderSelected(seg, orderNo) {
+  const order = orderPool.find(o => o.orderNo === orderNo)
+  if (order) {
+    seg.orderInfo = order
+    seg.width = order.width
+  } else {
+    seg.orderInfo = null
+    seg.width = null
+  }
+}
+
+// ─── 段辅助 ─────────────────────────────────────────────────
+function segTypeLabel(type) {
+  const map = { edge: '边丝', order: '订单' }
+  return map[type] || type
+}
+
+let _segId = 2 // 1,2 初始给边丝了
+function makeId() { return ++_segId }
+
+// 获取订单是第几个顺序 ①②
+function getOrderDisplayIndex(id) {
+  const orders = segments.filter(s => s.type === 'order')
+  const idx = orders.findIndex(o => o.id === id)
+  return idx + 1
+}
+
+function addOrderSegment() {
+  // 追加在最后右边丝的前方
+  const rightEdgeIdx = segments.length - 1
+  segments.splice(rightEdgeIdx, 0, {
+    id: makeId(),
+    type: 'order',
+    width: null,
+    orderId: null,
+    orderInfo: null,
+  })
+}
+
+function removeSegment(idx) {
+  segments.splice(idx, 1)
+}
+
+// 选母卷时重置环境
+watch(selectedSubCoilNo, (val) => {
+  if (!val) {
+    segments.splice(0, segments.length)
+    return
+  }
+  // 退回仅保留边丝
+  segments.splice(0, segments.length,
+    { id: makeId(), type: 'edge', label: '左边', width: 8, orderId: null, orderInfo: null },
+    { id: makeId(), type: 'edge', label: '右边', width: 8, orderId: null, orderInfo: null },
+  )
+  coronaPasses.value = 1
+  seqReason.value = ''
+  planNote.value = ''
+})
+
+
+// ─── 核心算法与校验 ────────────────────────────────────────────
+// 总占用宽度 (边丝 + 订单宽之和)
+const totalAllocated = computed(() =>
+  segments.reduce((sum, s) => sum + (Number(s.width) || 0), 0)
+)
+
+const orderTotalWidth = computed(() =>
+  segments.filter(s => s.type === 'order').reduce((sum, s) => sum + (Number(s.width) || 0), 0)
+)
+
+const remaining = computed(() =>
+  (selectedMaterial.value?.width || 0) - totalAllocated.value
+)
+
+// 单个订单宽是否超过有效宽度？(非常关键的死卡点, 会直接导致无法生产)
+const hasSingleOrderOverEffectiveWidth = computed(() => {
+  if(!selectedMaterial.value) return false
+  const ew = effectiveWidth.value
+  return segments.some(s => s.type === 'order' && s.width > ew)
+})
+
+const isOverTotal = computed(() => remaining.value < 0)
+const isOverEffective = computed(() => hasSingleOrderOverEffectiveWidth.value)
+const orderSegCount = computed(() => segments.filter(s => s.type === 'order').length)
+
+// 废料率计算 (采用全宽算损耗标准)
+const wasteRate = computed(() => {
+  const mw = selectedMaterial.value?.width || 0
+  if (mw === 0) return '0.0'
+  
+  if (isOverTotal.value) {
+    // 长度顺序切模式，估算一个高废料作为参考（实际按每道次余料核算）
+    // 为了原型这里设计一个简化算法： 1 - (所有订单总宽 / (段数 * 母宽))，假定每一段浪费一整条外加边丝。
+    const avgOrderWidth = orderTotalWidth.value / orderSegCount.value;
+    const waste = mw - avgOrderWidth - 16;  // 16 = 双边8+8
+    return ((waste / mw) * 100).toFixed(1)
+  }
+
+  // 宽度同时切（不出总宽），废料 = 边丝 + 余下物理留白
+  const edgeW = segments.filter(s => s.type === 'edge').reduce((sum, s) => sum + (Number(s.width) || 0), 0)
+  const wasteWidth = edgeW + Math.max(0, remaining.value)
+  return ((wasteWidth / mw) * 100).toFixed(1)
+})
+
+const wasteRateClass = computed(() => {
+  const r = parseFloat(wasteRate.value)
+  if (r <= 5) return 'green'
+  if (r > 15) return 'red'
+  return 'orange'
+})
+
+// ─── 提交控制 ────────────────────────────────────────────
+const canSubmit = computed(() => {
+  if (!selectedSubCoilNo.value) return false
+  if (!selectedMachineId.value) return false
+  if (orderSegCount.value === 0) return false
+  if (hasSingleOrderOverEffectiveWidth.value) return false // 死卡点
+  if (orderSegCount.value > 1 && !seqReason.value.trim()) return false // 多个必须写理由
+  return true
+})
+
+function closeModal() {
+  emit('close')
+}
+
+function submitForm() {
+  if (!canSubmit.value) return
+  
+  const orderList = segments.filter(s => s.type === 'order' && s.orderInfo).map((s, index) => ({
+      seq: index + 1,
+      type: 'order',
+      orderNo: s.orderId,
+      customer: s.orderInfo.customer,
+      orderWidth: s.width,
+      lengthMin: s.orderInfo.lengthMin,
+      lengthMax: s.orderInfo.lengthMax,
+      grade: s.orderInfo.grade || '一级品',
+  }))
+
+  const submitData = {
+    // 省去了 ID 生层逻辑，交由上层负责
+    machineId: selectedMachineId.value,
+    subCoilNo: selectedSubCoilNo.value,
+    motherCoilNo: selectedMaterial.value.motherCoilNo,
+    frameNo: selectedMaterial.value.frameNo,
+    alloy: selectedMaterial.value.alloy,
+    productType: selectedMaterial.value.productType,
+    thickness: selectedMaterial.value.thickness,
+    width: selectedMaterial.value.width,
+    length: selectedMaterial.value.length,
+    coronaPasses: coronaPasses.value,
+    plan: orderList,
+    edgeTrimLeft: Number(segments[0].width) || 0,
+    edgeTrimRight: Number(segments[segments.length-1].width) || 0,
+    seqReason: seqReason.value,
+    note: planNote.value,
+    reviewStatus: selectedMaterial.value.reviewStatus,
+    review: selectedMaterial.value.review,
+    status: selectedMaterial.value.reviewStatus === 'reviewed' ? 'planned' : 'pending_review',
+    wasteRate: parseFloat(wasteRate.value)
+  }
+  emit('submit', submitData)
+}
+</script>
+
+<style scoped>
+/* ─── 遮罩 & 动画 ─────────────────────────────────────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-fade-enter-active,
+.modal-fade-leave-active { transition: opacity 0.2s ease; }
+.modal-fade-enter-from,
+.modal-fade-leave-to { opacity: 0; }
+
+.modal-scale-enter-active,
+.modal-scale-leave-active {
+  transition: opacity 0.2s ease, transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.modal-scale-enter-from,
+.modal-scale-leave-to { opacity: 0; transform: scale(0.96) translateY(8px); }
+
+.fade-in-enter-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.fade-in-enter-from { opacity: 0; transform: translateY(-4px); }
+
+/* ─── 弹窗主体 ───────────────────────────────────────── */
+.modal-content {
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 900px; /* 专为精切界面设计的宽度 */
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-medium);
+}
+
+.modal-header {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: var(--bg-main);
+  flex-shrink: 0;
+}
+
+.modal-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title-icon { color: var(--primary-color); }
+.modal-title { margin: 0; font-size: 1.1rem; color: var(--text-main); font-weight: 600; }
+
+.close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-md);
+  color: var(--text-muted);
+  transition: background-color 0.2s, color 0.2s;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+.close-btn:hover { background: var(--border-light); color: var(--text-main); }
+
+/* ─── 面板滚动区 ─────────────────────────────────────── */
+.modal-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background-color: var(--bg-surface);
+}
+
+/* 区块公用样式 */
+.section-block {
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  padding: 1.25rem;
+}
+
+.section-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 1rem;
+}
+
+.section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  font-weight: 800;
+}
+
+.warning-bg { background-color: #fef3c7; color: #d97706;}
+.text-warning { color: #d97706; }
+
+.optional {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* ─── ❶ 表单区 ───────────────────────────────────────── */
+.select-row {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.flex-1 { flex: 1; }
+.flex-2 { flex: 1.8; }
+
+label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.required { color: var(--status-error); }
+
+.material-info-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--bg-hover);
+  border-radius: var(--radius-md);
+  margin-top: 1rem;
+  border: 1px solid var(--border-light);
+}
+
+.info-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+}
+
+.chip-label { color: var(--text-muted); }
+.chip-val { font-weight: 600; color: var(--text-main); }
+.chip-unit { font-size: 0.7rem; color: var(--text-muted); margin-left: 1px; font-weight: 400; }
+
+.badge-battery { background: #fee2e2; color: #dc2626; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
+.badge-double { background: #f1f5f9; color: #475569; padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; }
+
+.font-bold { font-weight: 700; color: var(--primary-color);}
+.text-primary { color: var(--primary-color); }
+
+/* ─── ❷ 质量评审 ───────────────────────────────────── */
+.review-block {
+  background: #fafafa;
+  border: 1px dashed var(--border-medium);
+}
+
+.review-status-tag {
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+.review-status-tag.reviewed { background: var(--status-success-bg); color: var(--status-success); }
+.review-status-tag.pending { background: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+.review-status-tag.none { background: var(--bg-hover); color: var(--text-muted); }
+
+.review-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.75rem 1rem;
+  background-color: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-md);
+  color: #b45309;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.review-warning.none {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--border-medium);
+  color: var(--text-secondary);
+}
+
+.review-content-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: stretch;
+}
+
+.review-left {
+  flex: 0 0 160px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-right: 1.5rem;
+  border-right: 1px solid var(--border-light);
+}
+
+.review-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.review-key { font-size: 0.75rem; color: var(--text-muted); }
+.review-val { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
+.review-val.conclusion { font-size: 1.05rem; }
+.text-warning { color: #d97706; font-weight: 700;}
+.text-success { color: var(--status-success); }
+
+.review-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.instruction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.inst-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  background: var(--bg-surface);
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid var(--border-light);
+}
+
+.inst-icon { opacity: 0.6; }
+.inst-icon.width-icon { color: #0369a1; }
+.inst-icon.length-icon { color: #d97706; }
+
+.inst-side { font-weight: 600; background: var(--bg-hover); padding: 1px 4px; border-radius: 3px; }
+.inst-defect { color: var(--status-error); }
+.inst-arrow { color: var(--text-muted); }
+.inst-action { font-weight: 600; color: var(--primary-color); }
+
+.no-defect-tip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--status-success);
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+}
+
+.effective-width-block {
+  margin-top: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: var(--bg-surface);
+  border-left: 3px solid var(--primary-color);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ew-label { font-size: 0.85rem; color: var(--text-muted); }
+.ew-value { font-size: 1.25rem; font-weight: 700; color: var(--primary-color); }
+.ew-unit { font-size: 0.8rem; color: var(--text-muted); }
+.ew-diff { font-size: 0.75rem; color: var(--text-muted); margin-left: auto; }
+.error-zone { color: var(--status-error); font-style: italic;}
+
+
+/* ─── ❸ 段设计区 ─────────────────────────────────────── */
+.no-material-tip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 1.5rem;
+  background: var(--bg-surface);
+  border: 1px dashed var(--border-medium);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+  justify-content: center;
+}
+
+/* 电晕单选框 */
+.corona-setting-row {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background: #f1f5f9;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+}
+.setting-label { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
+.radio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+}
+.radio-label input[type="radio"] { cursor: pointer; }
+
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.sub-title { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
+
+.add-seg-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-medium);
+  color: var(--text-main);
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8rem;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.add-seg-btn:hover:not(:disabled) {
+  background: white;
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+.add-seg-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.segments-header {
+  display: flex;
+  padding: 0.6rem 0.5rem;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.segment-row {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 0.5rem;
+  border: 1px solid var(--border-light);
+  border-top: none;
+  background: white;
+  transition: background-color 0.2s;
+}
+.segment-row:last-child {
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+}
+
+.seg-row-edge { background: #fafafa; }
+.seg-row-order { background: white; }
+
+/* 列宽分配控制 */
+.col-tag { width: 40px; text-align: center; }
+.col-type { width: 60px; text-align: center; }
+.col-order { flex: 1; margin: 0 0.5rem; }
+.col-width { width: 80px; text-align: right; }
+.col-customer { width: 160px; margin: 0 0.75rem; }
+.col-action { width: 40px; text-align: center; }
+
+.text-right { text-align: right; }
+
+.seq-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: var(--primary-light);
+  color: var(--primary-color);
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.seg-type-tag {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.seg-type-tag.order { background: #e0f2fe; color: #0284c7; }
+.seg-type-tag.edge { background: #f1f5f9; color: #475569; }
+
+.form-input {
+  width: 100%;
+  padding: 0.4rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
+  font-size: 0.85rem;
+  transition: border-color 0.2s;
+}
+.form-input:focus { outline: none; border-color: var(--primary-color); }
+.full-w { width: 100%; }
+
+.readonly-val {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--primary-color);
+  padding: 0 0.2rem;
+}
+
+.text-xs { font-size: 0.7rem; }
+.ml-1 { margin-left: 0.25rem; }
+
+.col-dash { color: var(--text-muted); opacity: 0.5;}
+
+.icon-btn.delete {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+.icon-btn.delete:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* 实时计算区 */
+.calc-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  background: #f8fafc;
+  padding: 0.75rem;
+  border-radius: var(--radius-md);
+  border: 1px solid #e2e8f0;
+  font-size: 0.85rem;
+}
+
+.calc-summary.has-error {
+  background: #fff1f2;
+  border-color: #fecdd3;
+}
+.calc-summary.has-warn {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.calc-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.calc-label { color: var(--text-muted); }
+.calc-val { font-size: 1.1rem; font-weight: 600; color: var(--text-main); }
+.calc-unit { color: var(--text-muted); font-size: 0.75rem; }
+.calc-sep { color: #cbd5e1; }
+
+.text-error { color: var(--status-error); }
+.text-muted { color: var(--text-muted); }
+
+.waste-rate-badge {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.waste-rate-badge.green { color: var(--status-success); }
+.waste-rate-badge.orange { color: #d97706; }
+.waste-rate-badge.red { color: var(--status-error); }
+
+
+/* 面板提示与说明区 */
+.alert-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radius-md);
+  font-size: 0.82rem;
+  margin-top: 0.75rem;
+  font-weight: 500;
+}
+.alert-msg.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.alert-msg.warn { background: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+
+.form-textarea {
+  width: 100%;
+  padding: 0.75rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.5;
+}
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+}
+.border-warning { border-color: #fbbf24; }
+.border-warning:focus { border-color: #d97706; box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.1); }
+
+/* ─── 底部操作 ─────────────────────────────────────── */
+.modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid var(--border-light);
+  background: #f8fafc;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.footer-hint {
+  font-size: 0.85rem;
+  color: var(--status-error);
+  font-weight: 500;
+}
+
+.footer-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-left: auto;
+}
+
+.btn {
+  padding: 0.5rem 1.5rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+  outline: none;
+}
+
+.btn.primary {
+  background: var(--primary-color);
+  color: white;
+  box-shadow: 0 1px 2px rgba(37, 99, 235, 0.2);
+}
+.btn.primary:not(:disabled):hover {
+  background: var(--primary-hover);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
+}
+.btn.primary:disabled {
+  background: var(--border-medium);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn.secondary {
+  background: white;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-medium);
+}
+.btn.secondary:hover {
+  background: var(--bg-hover);
+  color: var(--text-main);
+}
+</style>
