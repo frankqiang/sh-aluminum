@@ -30,6 +30,16 @@ const routes = [
                 path: 'precision-cutting',
                 name: 'PrecisionCutting',
                 component: () => import('../views/PrecisionCuttingView.vue')
+            },
+            {
+                path: 'quality',
+                name: 'Quality',
+                component: () => import('../views/QualityView.vue')
+            },
+            {
+                path: 'quality/:id/review',
+                name: 'QualityReview',
+                component: () => import('../views/QualityReviewView.vue')
             }
         ]
     }

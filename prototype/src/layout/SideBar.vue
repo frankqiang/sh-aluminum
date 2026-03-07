@@ -31,11 +31,17 @@
         </div>
       </div>
 
-      <div class="menu-group disabled">
+      <div class="menu-group open">
         <div class="menu-header">
           <ShieldCheck :size="18" class="icon" />
           <span class="title" v-if="!isCollapsed">质量管理</span>
-          <ChevronRight :size="14" class="arrow" v-if="!isCollapsed" />
+          <ChevronDown :size="14" class="arrow" v-if="!isCollapsed" />
+        </div>
+        <div class="menu-items">
+          <router-link to="/quality" class="menu-item" active-class="active">
+            <ClipboardCheck :size="18" class="icon" />
+            <span class="title" v-if="!isCollapsed">质量评审</span>
+          </router-link>
         </div>
       </div>
 
@@ -79,7 +85,8 @@ import {
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
-  Microscope
+  Microscope,
+  ClipboardCheck
 } from 'lucide-vue-next'
 
 const isCollapsed = ref(false)
