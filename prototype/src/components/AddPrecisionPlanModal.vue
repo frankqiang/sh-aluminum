@@ -166,7 +166,7 @@
                 <template v-else>
                   <!-- 电晕设置 -->
                   <div class="corona-setting-row mb-4">
-                    <span class="setting-label">电晕要求（固定达因值≥33）：</span>
+                    <span class="setting-label">电晕要求：</span>
                     <label class="radio-label">
                       <input type="radio" v-model="coronaPasses" :value="1" name="coronaGroup"> 1 遍
                     </label>
@@ -326,7 +326,7 @@
                     <div class="calc-sep">|</div>
                     <div class="calc-item" title="评审指令排查出的无缺陷理想区宽度">
                       <span class="calc-label">有效宽度</span>
-                      <span class="calc-val font-mono text-primary">{{ effectiveWidth }}</span>
+                      <span class="calc-val font-mono" style="color: var(--primary-color);">{{ effectiveWidth }}</span>
                       <span class="calc-unit">mm</span>
                     </div>
                     <div class="calc-sep">|</div>
@@ -545,9 +545,9 @@ function findBestOrder(excludeOrderNos = []) {
     })[0] || null
 }
 
-// ─── 段辅助 ─────────────────────────────────────────────────
+// ─── 段辅助 ─────────────────────────────────────────────────────────────────
 function segTypeLabel(type) {
-  const map = { edge: '边丝', order: '订单' }
+  const map = { edge: '边丝', order: '订单', defect_cut: '切除' }
   return map[type] || type
 }
 
@@ -590,14 +590,31 @@ watch(selectedSubCoilNo, (val) => {
     segments.splice(0, segments.length)
     return
   }
-  const leftEdge = { id: makeId(), type: 'edge', label: '左边', width: 8, orderId: null, orderInfo: null, note: '' }
-  const rightEdge = { id: makeId(), type: 'edge', label: '右边', width: 8, orderId: null, orderInfo: null, note: '' }
-  const initial = [leftEdge, rightEdge]
+  const leftEdge = { id: makeId(), type: 'edge', label: '左边', width: 8, orderId: null, orderInfo: null, note: '左边丝' }
+  const rightEdge = { id: makeId(), type: 'edge', label: '右边', width: 8, orderId: null, orderInfo: null, note: '右边丝' }
+  const initial = [leftEdge]
 
-  // 等 selectedMaterial computed 更新后再匹配（nextTick 替代方案：直接用 precisionMaterialPool 查找）
   const material = precisionMaterialPool.find(m => m.subCoilNo === val)
   if (material) {
     const ew = material.review?.effectiveWidth ?? material.width
+
+    // 扫描评审指令，自动生成宽度方向的切除段（类比分切的 buildInitialSegments）
+    const instructions = material.review?.instructions ?? []
+    for (const inst of instructions) {
+      if (inst.locationType === 'width' && inst.action === '切除' && inst.position > 0) {
+        initial.push({
+          id: makeId(),
+          type: 'defect_cut',
+          width: inst.position,  // position 即切除宽度（从边缘计算并已包含边丝内）
+          orderId: null,
+          orderInfo: null,
+          note: `${inst.side} ${inst.defectType}切除${inst.position}mm`,
+          autoGen: true
+        })
+      }
+    }
+
+    // 自动匹配最优订单（急单优先，再按宽度降序）
     const bestOrder = orderPool
       .filter(o => o.alloy === material.alloy && o.width <= ew)
       .sort((a, b) => {
@@ -607,7 +624,7 @@ watch(selectedSubCoilNo, (val) => {
       })[0] || null
 
     if (bestOrder) {
-      const orderSeg = {
+      initial.push({
         id: makeId(),
         type: 'order',
         width: bestOrder.width,
@@ -617,11 +634,11 @@ watch(selectedSubCoilNo, (val) => {
         planCoils: 1,
         planLengthMin: Math.round((bestOrder.lengthMin + bestOrder.lengthMax) / 2),
         note: ''
-      }
-      initial.splice(1, 0, orderSeg)
+      })
     }
   }
 
+  initial.push(rightEdge)
   segments.splice(0, segments.length, ...initial)
   coronaPasses.value = 1
   seqReason.value = ''
@@ -1164,6 +1181,7 @@ label {
 
 .seg-row-edge { background: #fafafa; }
 .seg-row-order { background: white; }
+.seg-row-defect_cut { background: #fff7f7; }
 
 /* 列宽分配控制 */
 .col-tag { width: 36px; text-align: center; flex-shrink: 0; }
@@ -1202,6 +1220,7 @@ label {
 }
 .seg-type-tag.order { background: #e0f2fe; color: #0284c7; }
 .seg-type-tag.edge { background: #f1f5f9; color: #475569; }
+.seg-type-tag.defect_cut { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
 
 .form-input {
   width: 100%;
