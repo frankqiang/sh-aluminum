@@ -167,12 +167,12 @@
                   <!-- 电晕设置 -->
                   <div class="corona-setting-row mb-4">
                     <span class="setting-label">电晕要求：</span>
-                    <label class="radio-label">
-                      <input type="radio" v-model="coronaPasses" :value="1" name="coronaGroup"> 1 遍
-                    </label>
-                    <label class="radio-label">
-                      <input type="radio" v-model="coronaPasses" :value="2" name="coronaGroup"> 2 遍
-                    </label>
+                    <textarea
+                      v-model="coronaNote"
+                      class="corona-textarea"
+                      placeholder="如：全车电晕两遍，达因値≥ 38..."
+                      rows="1"
+                    ></textarea>
                   </div>
 
                   <div class="segments-area-header mb-2 flex-between">
@@ -434,7 +434,7 @@ const emit = defineEmits(['close', 'submit'])
 // ─── 状态 ───────────────────────────────────────────────
 const selectedSubCoilNo = ref('')
 const selectedMachineId = ref('')
-const coronaPasses = ref(1)
+const coronaNote = ref('')   // 电晕要求文本描述
 const seqReason = ref('')
 const planNote = ref('')
 
@@ -640,7 +640,7 @@ watch(selectedSubCoilNo, (val) => {
 
   initial.push(rightEdge)
   segments.splice(0, segments.length, ...initial)
-  coronaPasses.value = 1
+  coronaNote.value = ''
   seqReason.value = ''
   planNote.value = ''
 })
@@ -740,7 +740,7 @@ function submitForm() {
     thickness: selectedMaterial.value.thickness,
     width: selectedMaterial.value.width,
     length: selectedMaterial.value.length,
-    coronaPasses: coronaPasses.value,
+    coronaPasses: coronaNote.value,
     plan: orderList,
     edgeTrimLeft: Number(segments[0].width) || 0,
     edgeTrimRight: Number(segments[segments.length-1].width) || 0,
@@ -789,7 +789,7 @@ function submitForm() {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   width: 100%;
-  max-width: 1120px; /* 扩展为通用宽幅 */
+  max-width: 1280px; /* 最宽设定，容纳订单要求+说明列 */
   max-height: 92vh;
   display: flex;
   flex-direction: column;
@@ -1115,22 +1115,27 @@ label {
 .corona-setting-row {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
   background: #f1f5f9;
-  padding: 0.75rem 1rem;
+  padding: 0.6rem 1rem;
   border-radius: var(--radius-md);
   border: 1px solid #e2e8f0;
 }
-.setting-label { font-size: 0.85rem; font-weight: 600; color: var(--text-main); }
-.radio-label {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+.setting-label { font-size: 0.85rem; font-weight: 600; color: var(--text-main); white-space: nowrap; }
+.corona-textarea {
+  flex: 1;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-sm);
   font-size: 0.85rem;
-  cursor: pointer;
-  color: var(--text-secondary);
+  font-family: inherit;
+  color: var(--text-main);
+  background: white;
+  resize: none;
+  transition: border-color 0.2s;
+  line-height: 1.5;
 }
-.radio-label input[type="radio"] { cursor: pointer; }
+.corona-textarea:focus { outline: none; border-color: var(--primary-color); }
 
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
 .sub-title { font-size: 0.85rem; font-weight: 600; color: var(--text-secondary); }
@@ -1192,7 +1197,7 @@ label {
 .col-length { width: 120px; flex-shrink: 0; margin: 0 0.4rem; }
 .col-plan { width: 160px; flex-shrink: 0; margin: 0 0.4rem; }
 .col-core { width: 130px; flex-shrink: 0; margin: 0 0.4rem; }
-.col-note { flex: 1; min-width: 60px; margin: 0 0.4rem; }
+.col-note { flex: 1; min-width: 160px; margin: 0 0.4rem; }
 .col-action { width: 30px; flex-shrink: 0; display: flex; justify-content: center; }
 
 .text-right { text-align: right; }
