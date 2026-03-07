@@ -188,8 +188,12 @@
                     <div class="col-type">类型</div>
                     <div class="col-order">绑定订单</div>
                     <div class="col-width text-right">宽度(mm)</div>
-                    <div class="col-customer">客户 / 米数</div>
-                    <div class="col-action text-right">操作</div>
+                    <div class="col-customer">客户</div>
+                    <div class="col-length">订单米数范围</div>
+                    <div class="col-plan">本次计划</div>
+                    <div class="col-core">订单要求</div>
+                    <div class="col-note">说明</div>
+                    <div class="col-action"></div>
                   </div>
 
                   <!-- 段列表 -->
@@ -242,16 +246,70 @@
                       </span>
                     </div>
 
-                    <!-- 客户/米数（仅订单类型，只读） -->
-                    <div class="col-customer text-sm text-secondary">
-                      <template v-if="seg.type === 'order' && seg.orderInfo">
-                        {{ seg.orderInfo.customer }} <span class="text-xs text-muted ml-1">({{ seg.orderInfo.lengthMin }}-{{ seg.orderInfo.lengthMax }}m)</span>
+                    <!-- 客户（仅订单类型，只读） -->
+                    <div class="col-customer">
+                      <span v-if="seg.type === 'order' && seg.orderInfo" class="order-customer">
+                        {{ seg.orderInfo.customer }}
+                      </span>
+                      <span v-else class="col-dash">—</span>
+                    </div>
+
+                    <!-- 米数范围（仅订单类型，只读） -->
+                    <div class="col-length">
+                      <span v-if="seg.type === 'order' && seg.orderInfo" class="font-mono text-sm">
+                        {{ seg.orderInfo.lengthMin }}~{{ seg.orderInfo.lengthMax }}m
+                      </span>
+                      <span v-else class="col-dash">—</span>
+                    </div>
+
+                    <!-- 本次计划：本次切几卷 + 目标米数 -->
+                    <div class="col-plan">
+                      <template v-if="seg.type === 'order'">
+                        <div class="plan-inputs">
+                          <input
+                            type="number"
+                            v-model="seg.planCoils"
+                            class="form-input seg-input text-right font-mono"
+                            min="1"
+                            placeholder="卷数"
+                            title="本次计划切制卷数"
+                          />
+                          <span class="plan-sep">卷</span>
+                          <input
+                            type="number"
+                            v-model="seg.planLengthMin"
+                            class="form-input seg-input text-right font-mono"
+                            min="0"
+                            placeholder="目标米"
+                            title="本次单卷目标米数"
+                          />
+                          <span class="plan-sep">m</span>
+                        </div>
                       </template>
                       <span v-else class="col-dash">—</span>
                     </div>
 
+                    <!-- 订单要求（可编辑，选订单后自动带出） -->
+                    <div class="col-core">
+                      <template v-if="seg.type === 'order'">
+                        <input
+                          type="text"
+                          v-model="seg.orderReq"
+                          class="form-input seg-input seg-req-input"
+                          placeholder="管芯规格、装框要求…"
+                        />
+                      </template>
+                      <span v-else class="col-dash">—</span>
+                    </div>
+
+                    <!-- 说明 -->
+                    <div class="col-note">
+                      <span v-if="seg.note" class="seg-note-text">{{ seg.note }}</span>
+                      <span v-else class="col-dash">—</span>
+                    </div>
+
                     <!-- 删除 -->
-                    <div class="col-action text-right">
+                    <div class="col-action">
                       <button v-if="seg.type === 'order'" class="icon-btn delete" @click="removeSegment(idx)" title="移除此订单">
                         <Trash2 :size="15" />
                       </button>
@@ -434,7 +492,7 @@ const usedOrderNos = computed(() =>
   segments.filter(s => s.orderInfo).map(s => s.orderInfo.orderNo)
 )
 
-// 拿到可用的订单过滤
+// 根据有效宽度和合金过滤可用订单（含🔴急单标识）
 function getAvailableOrderOptions(seg) {
   if (!selectedMaterial.value) return []
   const alloy = selectedMaterial.value.alloy
@@ -448,20 +506,43 @@ function getAvailableOrderOptions(seg) {
 
   return availableList.map(o => ({
     value: o.orderNo,
-    label: `${o.orderNo}  ${o.customer}  ${o.width}mm (${o.lengthMin}-${o.lengthMax}m)`
+    // 急单加 🔴 标记
+    label: `${o.priority === 'urgent' ? '🔴 ' : ''}${o.orderNo}  ${o.customer}  ${o.width}mm`
   }))
 }
 
-// 选中
+// 选中订单时自动带出宽度和订单要求（仅在未手动填时才预带）
 function onOrderSelected(seg, orderNo) {
   const order = orderPool.find(o => o.orderNo === orderNo)
   if (order) {
     seg.orderInfo = order
     seg.width = order.width
+    if (!seg.orderReq) {
+      seg.orderReq = order.coreSpec || ''
+    }
   } else {
     seg.orderInfo = null
     seg.width = null
   }
+}
+
+// 自动匹配最优订单：找合金匹配、宽度最大且≤有效宽度的订单
+function findBestOrder(excludeOrderNos = []) {
+  if (!selectedMaterial.value) return null
+  const alloy = selectedMaterial.value.alloy
+  const ew = effectiveWidth.value
+  return orderPool
+    .filter(o =>
+      o.alloy === alloy &&
+      o.width <= ew &&
+      !excludeOrderNos.includes(o.orderNo)
+    )
+    .sort((a, b) => {
+      // 急单优先，再按宽度降序
+      if (a.priority === 'urgent' && b.priority !== 'urgent') return -1
+      if (b.priority === 'urgent' && a.priority !== 'urgent') return 1
+      return b.width - a.width
+    })[0] || null
 }
 
 // ─── 段辅助 ─────────────────────────────────────────────────
@@ -481,14 +562,21 @@ function getOrderDisplayIndex(id) {
 }
 
 function addOrderSegment() {
-  // 追加在最后右边丝的前方
-  const rightEdgeIdx = segments.length - 1
-  segments.splice(rightEdgeIdx, 0, {
+  // 尝试自动匹配下一个未使用的最优订单
+  const usedNos = segments.filter(s => s.orderInfo).map(s => s.orderInfo.orderNo)
+  const bestOrder = findBestOrder(usedNos)
+  const rightEdgeIdx = segments.findLastIndex(s => s.type === 'edge')
+  const insertAt = rightEdgeIdx > 0 ? rightEdgeIdx : segments.length
+  segments.splice(insertAt, 0, {
     id: makeId(),
     type: 'order',
-    width: null,
-    orderId: null,
-    orderInfo: null,
+    width: bestOrder?.width ?? null,
+    orderId: bestOrder?.orderNo ?? null,
+    orderInfo: bestOrder ?? null,
+    orderReq: bestOrder?.coreSpec ?? '',
+    planCoils: 1,
+    planLengthMin: bestOrder ? Math.round((bestOrder.lengthMin + bestOrder.lengthMax) / 2) : null,
+    note: ''
   })
 }
 
@@ -496,17 +584,45 @@ function removeSegment(idx) {
   segments.splice(idx, 1)
 }
 
-// 选母卷时重置环境
+// 选子卷时重置环境，并自动匹配最优订单预填
 watch(selectedSubCoilNo, (val) => {
   if (!val) {
     segments.splice(0, segments.length)
     return
   }
-  // 退回仅保留边丝
-  segments.splice(0, segments.length,
-    { id: makeId(), type: 'edge', label: '左边', width: 8, orderId: null, orderInfo: null },
-    { id: makeId(), type: 'edge', label: '右边', width: 8, orderId: null, orderInfo: null },
-  )
+  const leftEdge = { id: makeId(), type: 'edge', label: '左边', width: 8, orderId: null, orderInfo: null, note: '' }
+  const rightEdge = { id: makeId(), type: 'edge', label: '右边', width: 8, orderId: null, orderInfo: null, note: '' }
+  const initial = [leftEdge, rightEdge]
+
+  // 等 selectedMaterial computed 更新后再匹配（nextTick 替代方案：直接用 precisionMaterialPool 查找）
+  const material = precisionMaterialPool.find(m => m.subCoilNo === val)
+  if (material) {
+    const ew = material.review?.effectiveWidth ?? material.width
+    const bestOrder = orderPool
+      .filter(o => o.alloy === material.alloy && o.width <= ew)
+      .sort((a, b) => {
+        if (a.priority === 'urgent' && b.priority !== 'urgent') return -1
+        if (b.priority === 'urgent' && a.priority !== 'urgent') return 1
+        return b.width - a.width
+      })[0] || null
+
+    if (bestOrder) {
+      const orderSeg = {
+        id: makeId(),
+        type: 'order',
+        width: bestOrder.width,
+        orderId: bestOrder.orderNo,
+        orderInfo: bestOrder,
+        orderReq: bestOrder.coreSpec || '',
+        planCoils: 1,
+        planLengthMin: Math.round((bestOrder.lengthMin + bestOrder.lengthMax) / 2),
+        note: ''
+      }
+      initial.splice(1, 0, orderSeg)
+    }
+  }
+
+  segments.splice(0, segments.length, ...initial)
   coronaPasses.value = 1
   seqReason.value = ''
   planNote.value = ''
@@ -589,11 +705,15 @@ function submitForm() {
       orderWidth: s.width,
       lengthMin: s.orderInfo.lengthMin,
       lengthMax: s.orderInfo.lengthMax,
+      // 本次计划数据
+      planCoils: Number(s.planCoils) || 1,
+      planLengthMin: Number(s.planLengthMin) || null,
+      orderReq: s.orderReq || '',
+      note: s.note || '',
       grade: s.orderInfo.grade || '一级品',
   }))
 
   const submitData = {
-    // 省去了 ID 生层逻辑，交由上层负责
     machineId: selectedMachineId.value,
     subCoilNo: selectedSubCoilNo.value,
     motherCoilNo: selectedMaterial.value.motherCoilNo,
@@ -1046,12 +1166,16 @@ label {
 .seg-row-order { background: white; }
 
 /* 列宽分配控制 */
-.col-tag { width: 40px; text-align: center; }
-.col-type { width: 60px; text-align: center; }
-.col-order { flex: 1; margin: 0 0.5rem; }
-.col-width { width: 80px; text-align: right; }
-.col-customer { width: 160px; margin: 0 0.75rem; }
-.col-action { width: 40px; text-align: center; }
+.col-tag { width: 36px; text-align: center; flex-shrink: 0; }
+.col-type { width: 52px; text-align: center; flex-shrink: 0; }
+.col-order { width: 188px; flex-shrink: 0; margin: 0 0.5rem; }
+.col-width { width: 72px; flex-shrink: 0; text-align: right; }
+.col-customer { width: 80px; flex-shrink: 0; margin: 0 0.4rem; }
+.col-length { width: 120px; flex-shrink: 0; margin: 0 0.4rem; }
+.col-plan { width: 160px; flex-shrink: 0; margin: 0 0.4rem; }
+.col-core { width: 130px; flex-shrink: 0; margin: 0 0.4rem; }
+.col-note { flex: 1; min-width: 60px; margin: 0 0.4rem; }
+.col-action { width: 30px; flex-shrink: 0; display: flex; justify-content: center; }
 
 .text-right { text-align: right; }
 
@@ -1098,7 +1222,29 @@ label {
 }
 
 .text-xs { font-size: 0.7rem; }
+.text-sm { font-size: 0.8rem; }
 .ml-1 { margin-left: 0.25rem; }
+
+.order-customer { font-size: 0.82rem; font-weight: 500; color: var(--text-main); }
+.seg-note-text { font-size: 0.78rem; color: var(--text-secondary); }
+.seg-req-input { width: 100%; font-size: 0.78rem; padding: 0.3rem 0.45rem; }
+
+.plan-inputs {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+.plan-inputs .seg-input {
+  width: 52px;
+  flex-shrink: 0;
+  font-size: 0.78rem;
+  padding: 0.3rem 0.35rem;
+}
+.plan-sep {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
 
 .col-dash { color: var(--text-muted); opacity: 0.5;}
 
