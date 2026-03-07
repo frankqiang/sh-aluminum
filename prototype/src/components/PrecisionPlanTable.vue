@@ -51,7 +51,8 @@
             <td>
               <div v-if="row.plan && row.plan.length > 0" class="plan-lines">
                 <div v-for="(item, idx) in row.plan" :key="idx" class="plan-line">
-                  {{ formatPlanLine(item) }}
+                  <span class="plan-seq">{{ getSeqSymbol(item.seq) }}</span>
+                  <span>{{ item.customer }} {{ item.orderWidth }}mm×{{ item.lengthMin }}-{{ item.lengthMax }}m</span>
                 </div>
               </div>
               <span v-else class="text-muted text-sm">—</span>
@@ -113,10 +114,9 @@ function getRowClass(row) {
   };
 }
 
-function formatPlanLine(item) {
+function getSeqSymbol(seq) {
   const seqMap = ["①", "②", "③", "④", "⑤"];
-  const seq = seqMap[item.seq - 1] || `${item.seq}`;
-  return `${seq}${item.customer} ${item.orderWidth}mm×${item.lengthMin}-${item.lengthMax}m`;
+  return seqMap[seq - 1] || `${seq}`;
 }
 
 function reviewLabel(status) {
@@ -272,6 +272,13 @@ function statusLabel(status) {
   color: var(--text-secondary);
   font-family: var(--font-mono);
   font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+}
+.plan-seq {
+  font-size: 1.05rem;
+  margin-right: 2px;
+  color: var(--text-main);
 }
 
 /* 状态单元格 */

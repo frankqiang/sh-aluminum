@@ -100,13 +100,11 @@
                   <div v-else-if="selectedMaterial.review" class="review-content-row">
                     <div class="review-left">
                       <div class="review-info-item">
-                        <span class="review-key">主结论</span>
-                        <span class="review-val conclusion" :class="{'text-warning': selectedMaterial.review.conclusion !== '正常处理'}">
-                          {{ selectedMaterial.review.conclusion }}
-                        </span>
+                        <span class="review-key">评审结论</span>
+                        <span class="review-val conclusion">{{ selectedMaterial.review.conclusion }}</span>
                       </div>
-                      <div class="review-info-item mt-2">
-                        <span class="review-key">等级</span>
+                      <div class="review-info-item">
+                        <span class="review-key">产品等级</span>
                         <span class="review-val" :class="gradeClass(selectedMaterial.review.grade)">
                           {{ selectedMaterial.review.grade }}
                         </span>
@@ -114,17 +112,15 @@
                     </div>
                     <div class="review-right">
                       <!-- 处理指令 -->
-                      <div v-if="selectedMaterial.review.instructions && selectedMaterial.review.instructions.length > 0" class="instructions-area">
-                        <span class="review-key" style="margin-bottom: 4px; display: block;">缺陷明细与指令</span>
+                      <div v-if="selectedMaterial.review.instructions.length > 0" class="instructions-area">
+                        <span class="review-key">处理指令</span>
                         <div class="instruction-list">
                           <div
                             v-for="(inst, idx) in selectedMaterial.review.instructions"
                             :key="idx"
                             class="inst-item"
                           >
-                            <Ruler v-if="inst.locationType === 'length'" :size="14" class="inst-icon length-icon" />
-                            <ArrowLeftRight v-else-if="inst.locationType === 'width'" :size="14" class="inst-icon width-icon" />
-                            
+                            <span class="inst-badge">{{ idx + 1 }}</span>
                             <template v-if="inst.locationType === 'width'">
                               <span class="inst-side">{{ inst.side }}</span>
                               <span class="inst-range font-mono">{{ inst.position }}mm</span>
@@ -132,7 +128,6 @@
                             <template v-else-if="inst.locationType === 'length'">
                               <span class="inst-side">{{ inst.locationDesc }}</span>
                             </template>
-                            
                             <span class="inst-defect">{{ inst.defectType }}</span>
                             <ArrowRight :size="11" class="inst-arrow" />
                             <span class="inst-action">{{ inst.action }}</span>
@@ -144,13 +139,13 @@
                         <span>无缺陷处理指令，质量判定正常</span>
                       </div>
                     </div>
-                    <!-- 有效宽度 -->
+                    <!-- 有效宽度单独放在最右侧块内，与SlittingPlan保持一致 -->
                     <div class="effective-width-block">
                       <span class="ew-label">有效宽度</span>
-                      <span class="ew-value font-mono">{{ effectiveWidth }}</span>
+                      <span class="ew-value">{{ effectiveWidth }}</span>
                       <span class="ew-unit">mm</span>
-                      <span v-if="effectiveWidth < selectedMaterial.width" class="ew-diff error-zone">
-                         (较原始 {{ selectedMaterial.width }}mm，已减少 {{ selectedMaterial.width - effectiveWidth }}mm)
+                      <span class="ew-diff" v-if="effectiveWidth < selectedMaterial.width">
+                        (原始 {{ selectedMaterial.width }}mm，减少 {{ selectedMaterial.width - effectiveWidth }}mm)
                       </span>
                     </div>
                   </div>
@@ -657,7 +652,7 @@ function submitForm() {
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-xl);
   width: 100%;
-  max-width: 900px; /* 专为精切界面设计的宽度 */
+  max-width: 1120px; /* 扩展为通用宽幅 */
   max-height: 92vh;
   display: flex;
   flex-direction: column;
@@ -728,17 +723,10 @@ function submitForm() {
 }
 
 .section-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--primary-light);
+  font-size: 1.15rem;
+  font-weight: 700;
   color: var(--primary-color);
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  font-size: 0.75rem;
-  font-family: var(--font-mono);
-  font-weight: 800;
+  margin-right: 2px;
 }
 
 .warning-bg { background-color: #fef3c7; color: #d97706;}
@@ -802,8 +790,11 @@ label {
 
 /* ─── ❷ 质量评审 ───────────────────────────────────── */
 .review-block {
-  background: #fafafa;
-  border: 1px dashed var(--border-medium);
+  background: var(--bg-main);
+  border: 1px solid #bfdbfe;
+  border-left: 3px solid var(--primary-color);
+  border-radius: var(--radius-md);
+  padding: 1rem 1.1rem;
 }
 
 .review-status-tag {
@@ -836,29 +827,38 @@ label {
 
 .review-content-row {
   display: flex;
+  align-items: center;
   gap: 1.5rem;
-  align-items: stretch;
+  margin-top: 0.75rem;
 }
 
 .review-left {
-  flex: 0 0 160px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  padding-right: 1.5rem;
-  border-right: 1px solid var(--border-light);
+  gap: 0.6rem;
 }
 
 .review-info-item {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 0.5rem;
 }
-.review-key { font-size: 0.75rem; color: var(--text-muted); }
-.review-val { font-size: 0.9rem; font-weight: 600; color: var(--text-main); }
-.review-val.conclusion { font-size: 1.05rem; }
-.text-warning { color: #d97706; font-weight: 700;}
+
+.review-key {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  min-width: 52px;
+  flex-shrink: 0;
+}
+
+.review-val {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+.review-val.conclusion { color: var(--primary-color); }
 .text-success { color: var(--status-success); }
+.text-warning { color: #d97706; }
 
 .review-right {
   flex: 1;
@@ -867,55 +867,96 @@ label {
   justify-content: center;
 }
 
+.instructions-area {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
 .instruction-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  margin-top: 2px;
 }
+
 .inst-item {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   font-size: 0.8rem;
-  background: var(--bg-surface);
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
 }
 
-.inst-icon { opacity: 0.6; }
-.inst-icon.width-icon { color: #0369a1; }
-.inst-icon.length-icon { color: #d97706; }
+.inst-badge {
+  width: 16px;
+  height: 16px;
+  background: var(--bg-hover);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
 
-.inst-side { font-weight: 600; background: var(--bg-hover); padding: 1px 4px; border-radius: 3px; }
-.inst-defect { color: var(--status-error); }
+.inst-side {
+  font-weight: 600;
+  background: var(--bg-hover);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.75rem;
+}
+
+.inst-range { color: var(--text-secondary); }
+.inst-defect { color: #dc2626; font-size: 0.78rem; }
 .inst-arrow { color: var(--text-muted); }
-.inst-action { font-weight: 600; color: var(--primary-color); }
+.inst-action { font-weight: 600; color: var(--primary-color); font-size: 0.78rem; }
 
 .no-defect-tip {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 0.82rem;
   color: var(--status-success);
-  font-size: 0.85rem;
-  padding: 0.5rem 0;
 }
 
+/* 有效宽度块 */
 .effective-width-block {
-  margin-top: 0.75rem;
-  padding: 0.6rem 1rem;
-  background: var(--bg-surface);
-  border-left: 3px solid var(--primary-color);
-  border-radius: 0 var(--radius-md) var(--radius-md) 0;
   display: flex;
-  align-items: center;
-  gap: 12px;
+  align-items: baseline;
+  gap: 5px;
+  padding: 0.55rem 0.85rem;
+  background: #eff6ff;
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--primary-color);
+  white-space: nowrap;
 }
 
-.ew-label { font-size: 0.85rem; color: var(--text-muted); }
-.ew-value { font-size: 1.25rem; font-weight: 700; color: var(--primary-color); }
-.ew-unit { font-size: 0.8rem; color: var(--text-muted); }
-.ew-diff { font-size: 0.75rem; color: var(--text-muted); margin-left: auto; }
+.ew-label {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.ew-value {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--primary-color);
+}
+
+.ew-unit {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.ew-diff {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
 .error-zone { color: var(--status-error); font-style: italic;}
 
 
