@@ -39,7 +39,7 @@
             <td class="font-mono text-bold">{{ row.alloy }}</td>
             <!-- 规格 -->
             <td class="text-sm">
-              <span class="number">{{ row.width }}</span><span class="unit">×</span><span class="number">{{ row.thickness }}</span><span class="unit">μm</span>
+              <span class="number">{{ row.thickness }}</span><span class="unit">×</span><span class="number">{{ row.width }}</span>
             </td>
             <!-- 评审 -->
             <td>
