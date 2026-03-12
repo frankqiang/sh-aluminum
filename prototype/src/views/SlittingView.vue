@@ -5,7 +5,7 @@
         <h1 class="view-title">分切排产</h1>
         <p class="view-subtitle">分切机组生产计划与组合排料</p>
       </div>
-      
+
       <div class="header-actions">
         <div class="controls-area">
           <div class="filter-group">
@@ -25,7 +25,7 @@
               <CustomSelect v-model="filterStatus" :options="statusOptions" class="filter-select" />
             </div>
           </div>
-          
+
           <div class="search-box">
             <Search :size="16" class="search-icon" />
             <input type="text" v-model="searchQuery" placeholder="搜索卷号/客户..." class="search-input" />
@@ -68,6 +68,18 @@
           <span class="stat-label">计划中:</span>
           <span class="stat-value planned">{{ stats.planned }}</span>
         </div>
+        <div class="stat-divider"></div>
+        <div class="stat-group">
+          <span class="stat-label">完成率:</span>
+          <span class="stat-value" :class="stats.completionRate >= 50 ? 'success' : 'pending'">{{ stats.completionRate
+            }}%</span>
+        </div>
+        <div class="stat-group">
+          <span class="stat-label">平均废料率:</span>
+          <span class="stat-value"
+            :class="stats.avgWasteRate <= 5 ? 'success' : stats.avgWasteRate <= 10 ? 'pending' : 'running'">{{
+              stats.avgWasteRate }}%</span>
+        </div>
       </div>
 
       <!-- 表格内容 -->
@@ -78,13 +90,8 @@
         <div class="page-info">共 {{ filteredPlans.length }} 条记录 · 第 {{ currentPage }}/{{ totalPages }} 页</div>
         <div class="page-controls">
           <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">上一页</button>
-          <button 
-            v-for="p in totalPages" 
-            :key="p" 
-            class="page-btn num" 
-            :class="{ active: p === currentPage }"
-            @click="currentPage = p"
-          >
+          <button v-for="p in totalPages" :key="p" class="page-btn num" :class="{ active: p === currentPage }"
+            @click="currentPage = p">
             {{ p }}
           </button>
           <button class="page-btn" :disabled="currentPage === totalPages" @click="currentPage++">下一页</button>
@@ -92,24 +99,12 @@
       </div>
     </div>
 
-    <SlittingDetailPanel 
-      :visible="detailVisible" 
-      :row="selectedRow" 
-      @close="detailVisible = false" 
-    />
+    <SlittingDetailPanel :visible="detailVisible" :row="selectedRow" @close="detailVisible = false" />
 
-    <AddSlittingPlanModal
-      :visible="addModalVisible"
-      :machines="slittingMachines"
-      @close="addModalVisible = false"
-      @submit="handleAddSubmit"
-    />
+    <AddSlittingPlanModal :visible="addModalVisible" :machines="slittingMachines" @close="addModalVisible = false"
+      @submit="handleAddSubmit" />
 
-    <ToastNotification 
-      :visible="toastVisible" 
-      :message="toastMessage" 
-      @close="toastVisible = false" 
-    />
+    <ToastNotification :visible="toastVisible" :message="toastMessage" @close="toastVisible = false" />
   </div>
 </template>
 
@@ -160,15 +155,15 @@ const toastMessage = ref('')
 // 计算过滤后的数据
 const filteredPlans = computed(() => {
   let result = [...slittingPlans]
-  
+
   if (filterMachine.value !== '全部') {
     result = result.filter(p => p.machineId === filterMachine.value)
   }
   if (filterStatus.value !== '全部') {
     const statusMap = {
-      '已完成': 'completed', 
+      '已完成': 'completed',
       '进行中': 'running',
-      '待评审': 'pending_review', 
+      '待评审': 'pending_review',
       '计划中': 'planned'
     }
     result = result.filter(p => p.status === statusMap[filterStatus.value])
@@ -195,14 +190,27 @@ const pagedPlans = computed(() => {
   return filteredPlans.value.slice(start, start + pageSize)
 })
 
-// 状态统计
-const stats = computed(() => ({
-  total: filteredPlans.value.length,
-  completed: filteredPlans.value.filter(p => p.status === 'completed').length,
-  running: filteredPlans.value.filter(p => p.status === 'running').length,
-  pendingReview: filteredPlans.value.filter(p => p.status === 'pending_review').length,
-  planned: filteredPlans.value.filter(p => p.status === 'planned').length,
-}))
+const stats = computed(() => {
+  const data = filteredPlans.value
+  const total = data.length
+  const completed = data.filter(p => p.status === 'completed').length
+  const running = data.filter(p => p.status === 'running').length
+  const pendingReview = data.filter(p => p.status === 'pending_review').length
+  const planned = data.filter(p => p.status === 'planned').length
+
+  // 完成率
+  const completionRate = total > 0 ? ((completed / total) * 100).toFixed(1) : '0.0'
+
+  // 平均废料率：从计划数据的 cutting.wasteRate 字段计算
+  const wasteRates = data
+    .filter(p => p.cutting?.wasteRate != null)
+    .map(p => parseFloat(p.cutting.wasteRate))
+  const avgWasteRate = wasteRates.length > 0
+    ? (wasteRates.reduce((a, b) => a + b, 0) / wasteRates.length).toFixed(1)
+    : '0.0'
+
+  return { total, completed, running, pendingReview, planned, completionRate, avgWasteRate }
+})
 
 function handleView(row) {
   selectedRow.value = row
@@ -225,6 +233,7 @@ function handleAddSubmit(formData) {
   flex-direction: column;
   height: 100%;
 }
+
 .view-header {
   display: flex;
   justify-content: space-between;
@@ -232,6 +241,7 @@ function handleAddSubmit(formData) {
   padding-bottom: var(--spacing-lg);
   margin-bottom: var(--spacing-md);
 }
+
 .header-left {
   display: flex;
   flex-direction: column;
@@ -245,6 +255,7 @@ function handleAddSubmit(formData) {
   letter-spacing: -0.02em;
   margin: 0;
 }
+
 .view-subtitle {
   color: var(--text-muted);
   margin-top: 0.25rem;
@@ -279,10 +290,23 @@ function handleAddSubmit(formData) {
   border-right: 1px solid var(--border-light);
   white-space: nowrap;
 }
-.filter-item:last-child { border-right: none; }
 
-.icon { color: var(--text-secondary); flex-shrink: 0; }
-.label { font-size: 0.85rem; font-weight: 500; color: var(--text-secondary); white-space: nowrap; flex-shrink: 0; }
+.filter-item:last-child {
+  border-right: none;
+}
+
+.icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 
 .control-input {
   border: none;
@@ -299,6 +323,7 @@ function handleAddSubmit(formData) {
   flex: 1;
   min-width: 0;
 }
+
 .filter-select :deep(.select-trigger) {
   border: none !important;
   background: transparent !important;
@@ -306,6 +331,7 @@ function handleAddSubmit(formData) {
   min-height: auto !important;
   box-shadow: none !important;
 }
+
 .filter-select :deep(.selected-text) {
   font-size: 0.85rem !important;
 }
@@ -314,6 +340,7 @@ function handleAddSubmit(formData) {
   position: relative;
   width: 220px;
 }
+
 .search-icon {
   position: absolute;
   left: 10px;
@@ -321,6 +348,7 @@ function handleAddSubmit(formData) {
   transform: translateY(-50%);
   color: var(--text-muted);
 }
+
 .search-input {
   width: 100%;
   padding: 0.5rem 1rem 0.5rem 32px;
@@ -330,6 +358,7 @@ function handleAddSubmit(formData) {
   background-color: var(--bg-surface);
   transition: all 0.2s;
 }
+
 .search-input:focus {
   outline: none;
   border-color: var(--primary-color);
@@ -348,17 +377,26 @@ function handleAddSubmit(formData) {
   transition: all 0.2s;
   border: none;
 }
+
 .action-btn.secondary {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-medium);
   color: var(--text-secondary);
 }
-.action-btn.secondary:hover { background-color: var(--bg-hover); color: var(--text-main); }
+
+.action-btn.secondary:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-main);
+}
+
 .action-btn.primary {
   background-color: var(--primary-color);
   color: white;
 }
-.action-btn.primary:hover { background-color: var(--primary-hover); }
+
+.action-btn.primary:hover {
+  background-color: var(--primary-hover);
+}
 
 /* 内容区域 */
 .view-content {
@@ -380,31 +418,50 @@ function handleAddSubmit(formData) {
   border: 1px solid var(--border-light);
   box-shadow: var(--shadow-sm);
 }
+
 .stat-group {
   display: flex;
   align-items: baseline;
   gap: 8px;
 }
+
 .stat-divider {
   width: 1px;
   height: 20px;
   background-color: var(--border-light);
 }
+
 .stat-label {
   font-size: 0.85rem;
   color: var(--text-secondary);
   font-weight: 500;
 }
+
 .stat-value {
   font-size: 1.15rem;
   font-weight: 700;
   font-family: var(--font-mono);
 }
-.stat-value.total { color: var(--text-main); }
-.stat-value.success { color: var(--status-success); }
-.stat-value.running { color: var(--primary-color); }
-.stat-value.pending { color: #d97706; }
-.stat-value.planned { color: var(--text-secondary); }
+
+.stat-value.total {
+  color: var(--text-main);
+}
+
+.stat-value.success {
+  color: var(--status-success);
+}
+
+.stat-value.running {
+  color: var(--primary-color);
+}
+
+.stat-value.pending {
+  color: #d97706;
+}
+
+.stat-value.planned {
+  color: var(--text-secondary);
+}
 
 /* 分页 */
 .pagination {
@@ -413,14 +470,17 @@ function handleAddSubmit(formData) {
   justify-content: space-between;
   padding-top: var(--spacing-sm);
 }
+
 .page-info {
   font-size: 0.85rem;
   color: var(--text-muted);
 }
+
 .page-controls {
   display: flex;
   gap: 4px;
 }
+
 .page-btn {
   padding: 4px 10px;
   font-size: 0.85rem;
@@ -431,18 +491,22 @@ function handleAddSubmit(formData) {
   cursor: pointer;
   transition: all 0.2s;
 }
+
 .page-btn:hover:not(:disabled) {
   background: var(--bg-hover);
   color: var(--text-main);
 }
+
 .page-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
 .page-btn.num {
   min-width: 32px;
   font-weight: 500;
 }
+
 .page-btn.active {
   background: var(--primary-color);
   color: white;

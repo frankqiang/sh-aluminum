@@ -11,15 +11,16 @@
             <th width="100">规格</th>
             <th width="75">评审</th>
             <th width="240">精切方案</th>
+            <th width="70">废料率</th>
             <th width="60" class="text-center">机台</th>
-            <th width="60" class="text-center">电晕</th>
+            <th width="120">计划备注</th>
             <th width="90">状态</th>
             <th width="60" class="text-center">操作</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="data.length === 0">
-            <td colspan="11">
+            <td colspan="12">
               <div class="empty-state">
                 <FileX :size="32" class="empty-icon" />
                 <span>暂无精切计划</span>
@@ -39,7 +40,8 @@
             <td class="font-mono text-bold">{{ row.alloy }}</td>
             <!-- 规格 -->
             <td class="text-sm">
-              <span class="number">{{ row.thickness }}</span><span class="unit">×</span><span class="number">{{ row.width }}</span>
+              <span class="number">{{ row.thickness }}</span><span class="unit">×</span><span class="number">{{
+                row.width }}</span>
             </td>
             <!-- 评审 -->
             <td>
@@ -47,24 +49,39 @@
                 {{ reviewLabel(row.reviewStatus) }}
               </span>
             </td>
-            <!-- 精切方案 (多重订单) -->
+            <!-- 精切方案 (含破卷备注 + 订单行) -->
             <td>
               <div v-if="row.plan && row.plan.length > 0" class="plan-lines">
-                <div v-for="(item, idx) in row.plan" :key="idx" class="plan-line">
-                  <span class="plan-seq">{{ getSeqSymbol(item.seq) }}</span>
-                  <span>{{ item.customer }} {{ item.orderWidth }}mm×{{ item.lengthMin }}-{{ item.lengthMax }}m</span>
-                </div>
+                <template v-for="(item, idx) in row.plan" :key="idx">
+                  <!-- 有破卷备注时，在精切行前插入破卷行 -->
+                  <div v-if="item.coronaNote" class="plan-line plan-line-corona">
+                    <span class="corona-tag">
+                      破卷<span v-if="item.seq > 1 || row.plan.length > 1" class="plan-seq"
+                        style="color: inherit; margin: 0 0 0 2px;">{{ getSeqSymbol(item.seq) }}</span>
+                    </span>
+                    <span class="corona-note">{{ item.coronaNote }}</span>
+                  </div>
+                  <!-- 精切方案行 -->
+                  <div class="plan-line">
+                    <span class="plan-seq">{{ getSeqSymbol(item.seq) }}</span>
+                    <span>{{ item.customer }} {{ item.orderWidth }}mm×{{ item.lengthMin }}-{{ item.lengthMax }}m</span>
+                  </div>
+                </template>
               </div>
+              <span v-else class="text-muted text-sm">—</span>
+            </td>
+            <!-- 废料率 -->
+            <td>
+              <span v-if="row.wasteRate != null" class="waste-rate" :class="wasteRateClass(row.wasteRate)">
+                {{ row.wasteRate }}%
+              </span>
               <span v-else class="text-muted text-sm">—</span>
             </td>
             <!-- 机台 -->
             <td class="text-center font-mono text-bold text-sm">{{ row.machineId }}#</td>
-            <!-- 电晕 -->
-            <td class="text-center">
-               <span v-if="row.coronaPasses" class="corona-badge" :class="`passes-${row.coronaPasses}`">
-                 {{ row.coronaPasses }}遍
-               </span>
-               <span v-else class="text-muted text-sm">—</span>
+            <!-- 计划备注 -->
+            <td>
+              <div class="note-text" :title="row.note">{{ row.note || '—' }}</div>
             </td>
             <!-- 状态 -->
             <td>
@@ -137,6 +154,15 @@ function statusLabel(status) {
   }
   return map[status] || status
 }
+
+// 废料率阈值颜色
+function wasteRateClass(rate) {
+  const r = parseFloat(rate)
+  if (isNaN(r)) return ''
+  if (r <= 8) return 'green'
+  if (r > 15) return 'red'
+  return 'orange'
+}
 </script>
 
 <style scoped>
@@ -193,9 +219,11 @@ function statusLabel(status) {
 .row-running {
   background-color: var(--primary-light);
 }
+
 .row-running td {
   border-bottom-color: #dbeafe;
 }
+
 .row-running:hover {
   background-color: #e0edff;
 }
@@ -203,18 +231,37 @@ function statusLabel(status) {
 .row-pending-review {
   background-color: #fffbeb;
 }
+
 .row-pending-review td {
   border-bottom-color: #fde68a;
 }
+
 .row-pending-review:hover {
   background-color: #fef3c7;
 }
 
-.text-center { text-align: center; }
-.text-muted { color: var(--text-muted); }
-.text-sm { font-size: 0.85rem; }
-.font-mono { font-family: var(--font-mono); font-size: 0.85rem; letter-spacing: 0.02em; }
-.text-bold { font-weight: 600; color: var(--text-main); }
+.text-center {
+  text-align: center;
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-sm {
+  font-size: 0.85rem;
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+.text-bold {
+  font-weight: 600;
+  color: var(--text-main);
+}
 
 .sub-coil-no {
   font-family: var(--font-mono);
@@ -239,35 +286,27 @@ function statusLabel(status) {
   font-size: 0.8rem;
   font-weight: 500;
 }
-.review-badge.reviewed { color: var(--status-success); }
-.review-badge.pending { color: #d97706; }
-.review-badge.none { color: var(--text-muted); }
 
-/* 电晕标签 */
-.corona-badge {
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  white-space: nowrap;
+.review-badge.reviewed {
+  color: var(--status-success);
 }
-.corona-badge.passes-1 {
-  background-color: #f1f5f9;
-  color: #475569;
-  border: 1px solid #cbd5e1;
+
+.review-badge.pending {
+  color: #d97706;
 }
-.corona-badge.passes-2 {
-  background-color: #e0f2fe;
-  color: #0369a1;
-  border: 1px solid #bae6fd;
+
+.review-badge.none {
+  color: var(--text-muted);
 }
+
+/* 电晕已移入精切方案列，此处不再需要 corona-badge */
 
 .plan-lines {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
+
 .plan-line {
   color: var(--text-secondary);
   font-family: var(--font-mono);
@@ -275,10 +314,39 @@ function statusLabel(status) {
   display: flex;
   align-items: center;
 }
+
 .plan-seq {
   font-size: 1.05rem;
   margin-right: 2px;
   color: var(--text-main);
+}
+
+/* 破卷行样式 */
+.plan-line-corona {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  gap: 3px;
+  padding: 0 0 1px 0;
+  border-bottom: 1px dashed var(--border-light);
+  margin-bottom: 2px;
+}
+
+.corona-tag {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #7c3aed;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
+  border-radius: 4px;
+  padding: 1px 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.corona-note {
+  color: #6d28d9;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
 }
 
 /* 状态单元格 */
@@ -293,10 +361,25 @@ function statusLabel(status) {
   white-space: nowrap;
 }
 
-.status-cell.completed { color: var(--status-success); background-color: var(--status-success-bg);}
-.status-cell.running { color: var(--primary-color); background-color: #dbeafe;}
-.status-cell.planned { color: var(--text-secondary); background-color: var(--bg-hover);}
-.status-cell.pending_review { color: #d97706; background-color: #fef3c7;}
+.status-cell.completed {
+  color: var(--status-success);
+  background-color: var(--status-success-bg);
+}
+
+.status-cell.running {
+  color: var(--primary-color);
+  background-color: #dbeafe;
+}
+
+.status-cell.planned {
+  color: var(--text-secondary);
+  background-color: var(--bg-hover);
+}
+
+.status-cell.pending_review {
+  color: #d97706;
+  background-color: #fef3c7;
+}
 
 /* 操作按钮 */
 .action-btn {
@@ -315,6 +398,20 @@ function statusLabel(status) {
   text-decoration: underline;
 }
 
+.note-text {
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+  max-width: 140px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.note-text[title="—"] {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
 /* 空状态 */
 .empty-state {
   display: flex;
@@ -328,5 +425,24 @@ function statusLabel(status) {
 
 .empty-icon {
   opacity: 0.5;
+}
+
+/* 废料率颜色 */
+.waste-rate {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.waste-rate.green {
+  color: var(--status-success);
+}
+
+.waste-rate.orange {
+  color: #d97706;
+}
+
+.waste-rate.red {
+  color: var(--status-error);
 }
 </style>

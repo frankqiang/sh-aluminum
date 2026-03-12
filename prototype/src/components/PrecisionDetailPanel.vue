@@ -137,12 +137,6 @@
 
             <div v-if="row.plan && row.plan.length > 0" class="cutting-plan-content">
               
-              <div class="corona-req">
-                <span class="info-label">电晕要求:</span>
-                <span class="corona-badge" :class="`passes-${row.coronaPasses}`">{{ row.coronaPasses }}遍</span>
-                <span class="text-sm text-muted ml-2">(达因值≥33)</span>
-              </div>
-
               <div v-if="row.plan.length > 1 && row.seqReason" class="seq-reason-box mt-3 mb-3">
                 <div class="seq-reason-title"><AlertTriangle :size="14" /> 多订单切割顺序说明</div>
                 <div class="seq-reason-text">{{ row.seqReason }}</div>
@@ -152,11 +146,12 @@
               <table class="segments-table">
                 <thead>
                   <tr>
-                    <th width="40" class="text-center">顺序</th>
-                    <th width="80">客户</th>
+                    <th width="60" class="text-center">顺序</th>
+                    <th width="90">客户</th>
                     <th width="70" class="text-right">订单宽度</th>
                     <th width="110">米数要求</th>
-                    <th>等级</th>
+                    <th width="60">等级</th>
+                    <th>破卷备注</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -168,6 +163,12 @@
                     <td class="text-right font-mono">{{ item.orderWidth }}<span class="text-xs text-muted">mm</span></td>
                     <td class="font-mono text-sm">{{ item.lengthMin }}-{{ item.lengthMax }}m</td>
                     <td><span class="grade-badge">{{ item.grade }}</span></td>
+                    <td>
+                      <span v-if="item.coronaNote" class="corona-note-badge">
+                        破卷<span v-if="item.seq > 1 || row.plan.length > 1" class="plan-seq" style="color: inherit; margin: 0 0 0 2px;">{{ getSeqSymbol(item.seq) }}</span>: {{ item.coronaNote }}
+                      </span>
+                      <span v-else class="text-muted text-xs">—</span>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -242,6 +243,11 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'action'])
 
+function getSeqSymbol(seq) {
+  const seqMap = ["①", "②", "③", "④", "⑤"];
+  return seqMap[seq - 1] || `${seq}`;
+}
+
 function productClass(type) {
   if (type === '电池箔') return 'battery'
   if (type === '双零箔') return 'double-zero'
@@ -284,7 +290,7 @@ function handleAction(actionName) {
   position: fixed;
   top: 0;
   right: 0;
-  width: 440px;
+  width: 780px;
   max-width: 95vw;
   height: 100vh;
   background: var(--bg-surface);
@@ -564,15 +570,23 @@ function handleAction(actionName) {
 .warning-icon { color: #d97706; }
 
 /* 方案区样式 */
-.corona-badge {
+/* 破卷备注展示（表格内内联展示） */
+.corona-note-badge {
   display: inline-block;
-  padding: 2px 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: #5b21b6;
+  background: #f5f3ff;
+  border: 1px solid #ddd6fe;
   border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  padding: 1px 6px;
+  white-space: nowrap;
 }
-.corona-badge.passes-1 { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
-.corona-badge.passes-2 { background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+
+.plan-seq {
+  font-size: 1.05rem;
+}
 
 .seq-reason-box {
   background-color: #fffbeb;

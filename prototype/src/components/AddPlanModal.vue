@@ -9,7 +9,7 @@
               <Plus :size="18" class="title-icon" />
               <span>新增轧机计划</span>
             </div>
-            
+
             <!-- 步骤指示器 -->
             <div class="step-indicator">
               <div class="step-circle" :class="{ active: step >= 1 }">1</div>
@@ -22,92 +22,131 @@
             </button>
           </div>
 
-          <!-- Step 1: 基础信息 -->
+          <!-- Step 1: 来料选择 + 基础信息 -->
           <div class="modal-body" v-if="step === 1">
-            
-            <!-- 区域 1: 目标机台 -->
-            <div class="v-section">
-              <div class="v-section-title">目标机台</div>
-              <div class="form-row">
-                <CustomSelect 
-                  v-model="form.machineId" 
-                  :options="machineGroupsOptions" 
-                  placeholder="请选择机台" 
-                  :grouped="true" 
-                  style="min-width: 200px; width: fit-content;"
-                />
-              </div>
-            </div>
 
-            <!-- 区域 2: 卷料信息 -->
+            <!-- 区域 1: 来料选择（与分切弹窗统一） -->
             <div class="v-section">
-              <div class="v-section-title">卷料信息</div>
+              <div class="v-section-title">
+                <span class="section-num">①</span> 来料选择
+              </div>
               <div class="form-grid">
                 <div class="form-item span-full">
                   <span class="label">新神火卷号 <span class="req">*</span></span>
-                  <input type="text" class="form-input mono" placeholder="如 1022601710" v-model="form.coilNo">
-                </div>
-                <div class="form-item">
-                  <span class="label">坯料卷号 <span class="req">*</span></span>
-                  <input type="text" class="form-input mono" placeholder="输入来料原卷号" v-model="form.blankCoilNo">
-                </div>
-                <div class="form-item">
-                  <span class="label">批次 <span class="req">*</span></span>
-                  <input type="text" class="form-input mono" placeholder="如 0122" v-model="form.batch">
+                  <CustomSelect v-model="selectedCoilNo" :options="coilOptions" placeholder="选择新神火卷号" />
                 </div>
               </div>
+
+              <!-- 坯料自动带出信息（只读） -->
+              <Transition name="fade-in">
+                <div v-if="selectedMaterial" class="material-info-bar">
+                  <div class="info-chip">
+                    <span class="chip-label">坯料卷号</span>
+                    <span class="chip-val font-mono">{{ selectedMaterial.blankCoilNo }}</span>
+                  </div>
+                  <div class="info-chip">
+                    <span class="chip-label">合金</span>
+                    <span class="chip-val font-mono">{{ selectedMaterial.alloy }}</span>
+                  </div>
+                  <div class="info-chip">
+                    <span class="chip-label">用途</span>
+                    <span class="chip-val" :class="'usage-' + selectedMaterial.usage">
+                      {{ usageLabelMap[selectedMaterial.usage] || selectedMaterial.usage }}
+                    </span>
+                  </div>
+                  <div class="info-chip">
+                    <span class="chip-label">宽度</span>
+                    <span class="chip-val font-mono">{{ selectedMaterial.width }}<span
+                        class="chip-unit">mm</span></span>
+                  </div>
+                  <div class="info-chip">
+                    <span class="chip-label">厚度</span>
+                    <span class="chip-val font-mono">{{ selectedMaterial.inThickness }}<span
+                        class="chip-unit">mm</span></span>
+                  </div>
+                  <div class="info-chip">
+                    <span class="chip-label">重量</span>
+                    <span class="chip-val font-mono">{{ selectedMaterial.weight?.toLocaleString() }}<span
+                        class="chip-unit">kg</span></span>
+                  </div>
+                  <div class="info-chip">
+                    <span class="chip-label">批次</span>
+                    <span class="chip-val font-mono">{{ selectedMaterial.batch }}</span>
+                  </div>
+                  <div class="info-chip" v-if="selectedMaterial.customer">
+                    <span class="chip-label">客户</span>
+                    <span class="chip-val">{{ selectedMaterial.customer }}</span>
+                  </div>
+                  <div class="info-chip" v-if="selectedMaterial.execOrderNo">
+                    <span class="chip-label">执行单号</span>
+                    <span class="chip-val font-mono" style="color:var(--primary-color);font-weight:600;">{{
+                      selectedMaterial.execOrderNo }}</span>
+                  </div>
+                </div>
+              </Transition>
             </div>
 
-            <!-- 区域 3: 物料属性 -->
-            <div class="v-section">
-              <div class="v-section-title">物料属性</div>
-              <div class="form-grid">
-                <div class="form-item">
-                  <span class="label">合金 <span class="req">*</span></span>
-                  <CustomSelect 
-                    v-model="form.alloy" 
-                    :options="['1060', '1100', '1235D', '1070', '8079', '1235']" 
-                    placeholder="选择合金" 
-                  />
+            <!-- 区域 2: 目标机台 + 卷号 -->
+            <Transition name="fade-in">
+              <div class="v-section" v-if="selectedMaterial">
+                <div class="v-section-title">
+                  <span class="section-num">②</span> 排产配置
                 </div>
-                <div class="form-item">
-                  <span class="label">用途 <span class="req">*</span></span>
-                  <CustomSelect 
-                    v-model="form.usage" 
-                    :options="usageOptions" 
-                    placeholder="选择用途" 
-                  />
-                </div>
-                <div class="form-item">
-                  <span class="label">来料厚度 (mm) <span class="req">*</span></span>
-                  <input type="number" step="0.01" class="form-input number" v-model="form.inThickness">
-                </div>
-                <div class="form-item">
-                  <span class="label">宽度 (mm) <span class="req">*</span></span>
-                  <input type="number" class="form-input number" v-model="form.width">
-                </div>
-                <div class="form-item">
-                  <span class="label">成品终厚 (μm) <span class="req">*</span></span>
-                  <input type="number" class="form-input number" v-model="form.finalThickness">
-                </div>
-                <div class="form-item">
-                  <span class="label">客户</span>
-                  <input type="text" class="form-input" placeholder="选填" v-model="form.customer">
+                <div class="form-grid">
+                  <div class="form-item">
+                    <span class="label">目标机台 <span class="req">*</span></span>
+                    <CustomSelect v-model="form.machineId" :options="machineGroupsOptions" placeholder="选择机台"
+                      :grouped="true" />
+                  </div>
+                  <div class="form-item">
+                    <span class="label">成品终厚 (μm) <span class="req">*</span></span>
+                    <input type="number" class="form-input number" placeholder="目标最终厚度" v-model="form.finalThickness">
+                  </div>
+                  <div class="form-item span-full">
+                    <span class="label">客户</span>
+                    <input type="text" class="form-input" placeholder="选填，可覆盖来料客户" v-model="form.customer">
+                  </div>
                 </div>
               </div>
-            </div>
+            </Transition>
 
           </div>
 
           <!-- Step 2: 道次配置 -->
           <div class="modal-body" v-else>
-            
+
             <div class="v-section">
-              <div class="v-section-title">道次配置</div>
-              
+              <div class="v-section-title">
+                <span class="section-num">③</span> 道次配置
+              </div>
+
               <div class="machine-hint">
-                <Info :size="14" class="hint-icon"/>
+                <Info :size="14" class="hint-icon" />
                 <span>当前机台: <strong>{{ selectedMachineName }}</strong> ({{ selectedMachineCapability }})</span>
+              </div>
+
+              <!-- 来料概要（只读） -->
+              <div class="material-summary-bar">
+                <span class="summary-item">
+                  <span class="summary-label">卷号</span>
+                  <span class="summary-val font-mono">{{ selectedCoilNo }}</span>
+                </span>
+                <span class="summary-sep">|</span>
+                <span class="summary-item">
+                  <span class="summary-label">来料厚</span>
+                  <span class="summary-val font-mono">{{ selectedMaterial?.inThickness }}mm</span>
+                </span>
+                <span class="summary-sep">|</span>
+                <span class="summary-item">
+                  <span class="summary-label">宽度</span>
+                  <span class="summary-val font-mono">{{ selectedMaterial?.width }}mm</span>
+                </span>
+                <span class="summary-sep">|</span>
+                <span class="summary-item">
+                  <span class="summary-label">终厚</span>
+                  <span class="summary-val font-mono" style="color:var(--primary-color);font-weight:700;">{{
+                    form.finalThickness }}μm</span>
+                </span>
               </div>
 
               <table class="pass-form-table">
@@ -138,12 +177,11 @@
             </div>
 
             <div class="v-section">
-              <div class="v-section-title">工艺说明</div>
-              <textarea 
-                class="form-input textarea" 
-                placeholder="在此输入工艺指标要求、质量指控指令或操作注意事项等..." 
-                v-model="form.remark"
-              ></textarea>
+              <div class="v-section-title">
+                <span class="section-num">④</span> 工艺说明
+              </div>
+              <textarea class="form-input textarea" placeholder="在此输入工艺指标要求、质量指控指令或操作注意事项等..."
+                v-model="form.remark"></textarea>
             </div>
 
           </div>
@@ -152,10 +190,14 @@
           <div class="modal-footer">
             <template v-if="step === 1">
               <button class="footer-btn secondary" @click="handleClose">取消</button>
-              <button class="footer-btn primary" @click="nextStep" :disabled="!canGoNext">下一步 <ArrowRight :size="16"/></button>
+              <button class="footer-btn primary" @click="nextStep" :disabled="!canGoNext">下一步
+                <ArrowRight :size="16" />
+              </button>
             </template>
             <template v-else>
-              <button class="footer-btn secondary" @click="step = 1"><ArrowLeft :size="16"/> 上一步</button>
+              <button class="footer-btn secondary" @click="step = 1">
+                <ArrowLeft :size="16" /> 上一步
+              </button>
               <button class="footer-btn primary" @click="submit" :disabled="!canSubmit">确认提交</button>
             </template>
           </div>
@@ -170,6 +212,7 @@ import { ref, reactive, computed, watch } from 'vue'
 import { Plus, X, ArrowRight, ArrowLeft, Info, Trash2 } from 'lucide-vue-next'
 import CustomSelect from './CustomSelect.vue'
 import { rollingMachines } from '../data/mock.js'
+import { rollingMaterialPool } from '../data/rolling-material-pool.js'
 
 const props = defineProps({
   visible: Boolean
@@ -179,31 +222,30 @@ const emit = defineEmits(['close', 'submit'])
 
 const step = ref(1)
 
-// 表单数据初始状态
-const initialForm = {
+// 来料选择状态（按新神火卷号选择）
+const selectedCoilNo = ref('')
+
+// 表单数据
+const form = reactive({
   machineId: '',
-  coilNo: '',
-  blankCoilNo: '',
-  batch: '',
-  alloy: '',
-  usage: '',
-  inThickness: '',
-  width: '',
   finalThickness: '',
   customer: '',
   passes: [],
   remark: ''
-}
-
-const form = reactive({ ...initialForm })
+})
 
 // 每次打开弹窗时重置状态
 watch(() => props.visible, (newVal) => {
   if (newVal) {
     step.value = 1
-    Object.assign(form, initialForm)
-    // 默认加一个空道次
-    form.passes = [{ n: 1, t: '' }]
+    selectedCoilNo.value = ''
+    Object.assign(form, {
+      machineId: '',
+      finalThickness: '',
+      customer: '',
+      passes: [{ n: 1, t: '' }],
+      remark: ''
+    })
   }
 })
 
@@ -211,47 +253,60 @@ function handleClose() {
   emit('close')
 }
 
-// ----------------- Step 1 逻辑 -----------------
+// ─── 来料池选项（按新神火卷号展示） ─────────────────
+const coilOptions = computed(() =>
+  rollingMaterialPool.map(m => ({
+    value: m.coilNo,
+    label: `${m.coilNo}  （${m.alloy} · ${usageLabelMap[m.usage] || m.usage} · ${m.width}mm）`
+  }))
+)
 
-// 将 mock 机器数据转换为 CustomSelect 分组选项结构
+// 选中的来料完整信息
+const selectedMaterial = computed(() =>
+  rollingMaterialPool.find(m => m.coilNo === selectedCoilNo.value) || null
+)
+
+// 选卷号后自动填充客户
+watch(selectedCoilNo, (val) => {
+  const mat = rollingMaterialPool.find(m => m.coilNo === val)
+  if (mat) {
+    form.customer = mat.customer || ''
+  }
+})
+
+const usageLabelMap = {
+  '电': '电池箔',
+  '食': '食品箔',
+  '药': '药品箔',
+  '双零': '双零箔',
+}
+
+// ─── Step 1 逻辑 ─────────────────────────────────────
 const machineGroupsOptions = computed(() => {
   return [
-    { 
-      label: '粗轧机 (1-3号)', 
+    {
+      label: '粗轧机 (1-3号)',
       options: rollingMachines.filter(m => m.id <= 3).map(m => ({ label: m.name, value: m.id }))
     },
-    { 
-      label: '中轧机 (4-6号)', 
+    {
+      label: '中轧机 (4-6号)',
       options: rollingMachines.filter(m => m.id >= 4 && m.id <= 6).map(m => ({ label: m.name, value: m.id }))
     },
-    { 
-      label: '中精轧 (7号)', 
+    {
+      label: '中精轧 (7号)',
       options: rollingMachines.filter(m => m.id === 7).map(m => ({ label: m.name, value: m.id }))
     },
-    { 
-      label: '精轧机 (8-14号)', 
+    {
+      label: '精轧机 (8-14号)',
       options: rollingMachines.filter(m => m.id >= 8).map(m => ({ label: m.name, value: m.id }))
     },
   ]
 })
 
-const usageOptions = [
-  { label: '电池箔 (电)', value: '电' },
-  { label: '药箔 (药)', value: '药' },
-  { label: '食品箔 (食)', value: '食' },
-  { label: '双零箔 (双零)', value: '双零' },
-]
-
 const canGoNext = computed(() => {
-  return form.machineId !== '' &&
-         form.coilNo.trim() !== '' &&
-         form.blankCoilNo.trim() !== '' &&
-         form.batch.trim() !== '' &&
-         form.alloy !== '' &&
-         form.usage !== '' &&
-         form.inThickness !== '' &&
-         form.width !== '' &&
-         form.finalThickness !== ''
+  return selectedCoilNo.value !== '' &&
+    form.machineId !== '' &&
+    form.finalThickness !== ''
 })
 
 function nextStep() {
@@ -260,8 +315,7 @@ function nextStep() {
   }
 }
 
-// ----------------- Step 2 逻辑 -----------------
-
+// ─── Step 2 逻辑 ─────────────────────────────────────
 const selectedMachine = computed(() => {
   return rollingMachines.find(m => m.id === form.machineId)
 })
@@ -273,8 +327,6 @@ const selectedMachineName = computed(() => {
 const selectedMachineCapability = computed(() => {
   const m = selectedMachine.value
   if (!m) return ''
-  // array.join 只有在 passes 是数组的时候可用
-  // 在 mock data 里，passes 可能是一个字符串比如 '1-3'
   const passText = Array.isArray(m.passes) ? m.passes.join(', ') : m.passes
   return `可轧 ${passText} 道次`
 })
@@ -286,7 +338,6 @@ function addPass() {
 
 function removePass(index) {
   form.passes.splice(index, 1)
-  // 重新编号
   form.passes.forEach((p, idx) => {
     p.n = idx + 1
   })
@@ -298,8 +349,21 @@ const canSubmit = computed(() => {
 
 function submit() {
   if (canSubmit.value) {
-    // 拷贝一份数据传出去
-    emit('submit', JSON.parse(JSON.stringify(form)))
+    const mat = selectedMaterial.value
+    // 合并来料信息 + 手填信息
+    const submitData = {
+      ...form,
+      coilNo: mat?.coilNo || '',
+      blankCoilNo: mat?.blankCoilNo || '',
+      batch: mat?.batch || '',
+      alloy: mat?.alloy || '',
+      usage: mat?.usage || '',
+      inThickness: mat?.inThickness || '',
+      width: mat?.width || '',
+      weight: mat?.weight || 0,
+      execOrderNo: mat?.execOrderNo || '',
+    }
+    emit('submit', JSON.parse(JSON.stringify(submitData)))
   }
 }
 </script>
@@ -321,28 +385,55 @@ function submit() {
 .modal-fade-leave-active {
   transition: opacity 0.2s ease;
 }
+
 .modal-fade-enter-from,
 .modal-fade-leave-to {
   opacity: 0;
 }
+
 .modal-fade-enter-active .modal-container {
   animation: modal-pop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes modal-pop {
-  0% { transform: scale(0.95) translateY(10px); opacity: 0; }
-  100% { transform: scale(1) translateY(0); opacity: 1; }
+  0% {
+    transform: scale(0.95) translateY(10px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+/* 淡入动画（带出信息条） */
+.fade-in-enter-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-in-enter-from {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.fade-in-leave-active {
+  transition: opacity 0.15s ease;
+}
+
+.fade-in-leave-to {
+  opacity: 0;
 }
 
 /* 容器 */
 .modal-container {
-  width: 580px;
+  width: 620px;
   background: var(--bg-surface);
   border-radius: var(--radius-lg);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow: visible;
 }
 
 /* 头部 */
@@ -362,7 +453,7 @@ function submit() {
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--text-main);
-  width: 150px; /* 固定宽度保证居中元素不偏 */
+  width: 150px;
 }
 
 .title-icon {
@@ -420,6 +511,7 @@ function submit() {
   margin-left: auto;
   transition: background 0.2s;
 }
+
 .close-btn:hover {
   background: var(--bg-hover);
   color: var(--text-main);
@@ -428,8 +520,7 @@ function submit() {
 /* 内容区 */
 .modal-body {
   padding: 1.25rem;
-  max-height: 70vh;
-  overflow-y: auto;
+  overflow: visible;
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -444,15 +535,110 @@ function submit() {
   margin-bottom: 0.8rem;
   display: flex;
   align-items: center;
+  gap: 6px;
 }
-.v-section-title::before {
-  content: '';
-  display: inline-block;
-  width: 4px;
-  height: 12px;
+
+.section-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
   background: var(--primary-color);
-  border-radius: 2px;
-  margin-right: 6px;
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* ── 自动带出信息条（与分切弹窗统一风格） ── */
+.material-info-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+}
+
+.info-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+}
+
+.chip-label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.chip-val {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+.chip-unit {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  margin-left: 1px;
+}
+
+/* 用途颜色 */
+.usage-电 {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.usage-药 {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.usage-食 {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+.usage-双零 {
+  color: #475569;
+  font-weight: 600;
+}
+
+/* ── Step 2 来料概要条 ── */
+.material-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-main);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  margin-bottom: 1rem;
+  font-size: 0.8rem;
+}
+
+.summary-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.summary-label {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.summary-val {
+  font-weight: 500;
+  color: var(--text-main);
+}
+
+.summary-sep {
+  color: var(--border-medium);
+  font-size: 0.7rem;
 }
 
 /* 基础表单样式 */
@@ -505,13 +691,20 @@ function submit() {
   cursor: not-allowed;
 }
 
-.form-input.auto-width {
-  width: auto;
-  min-width: 200px;
+.mono {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.85rem;
 }
 
-.mono { font-family: var(--font-mono); font-weight: 500; font-size: 0.85rem;}
-.number { font-family: var(--font-mono); }
+.number {
+  font-family: var(--font-mono);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
 
 /* Step 2 样式 */
 .machine-hint {
@@ -524,7 +717,7 @@ function submit() {
   padding: 8px 12px;
   border-radius: var(--radius-md);
   font-size: 0.85rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .pass-form-table {
@@ -568,6 +761,7 @@ function submit() {
   border-radius: var(--radius-sm);
   transition: all 0.2s;
 }
+
 .del-btn:hover {
   background: var(--status-error-bg);
   color: var(--status-error);
@@ -584,6 +778,7 @@ function submit() {
   border-radius: var(--radius-md);
   transition: background 0.2s;
 }
+
 .add-pass-btn:hover {
   background: var(--primary-light);
 }
@@ -603,6 +798,8 @@ function submit() {
   display: flex;
   justify-content: flex-end;
   gap: 0.75rem;
+  position: relative;
+  z-index: 10;
 }
 
 .footer-btn {
@@ -627,6 +824,7 @@ function submit() {
   color: var(--text-main);
   border: 1px solid var(--border-medium);
 }
+
 .footer-btn.secondary:hover:not(:disabled) {
   background: var(--bg-hover);
 }
@@ -637,6 +835,7 @@ function submit() {
   border: 1px solid var(--primary-color);
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.15);
 }
+
 .footer-btn.primary:hover:not(:disabled) {
   background: var(--primary-hover);
 }

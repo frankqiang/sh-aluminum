@@ -1,0 +1,247 @@
+/* 机台详情弹窗内容区共用样式 */
+
+.detail-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 0 1.5rem;
+  overflow-y: auto;
+}
+
+/* ── 分区块 ── */
+.detail-section {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.detail-section:last-child {
+  border-bottom: none;
+}
+
+.section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.625rem;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.section-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.section-dot.running {
+  background: var(--status-success);
+}
+.section-dot.planned {
+  background: var(--status-processing);
+}
+.section-dot.fault {
+  background: var(--status-error);
+}
+
+/* ── 今日计划进度 ── */
+.plan-progress-row {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.625rem;
+}
+
+.prog-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.1rem;
+}
+
+.prog-num {
+  font-family: var(--font-display);
+  font-size: 1.375rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.prog-num.completed {
+  color: var(--status-success);
+}
+.prog-num.running {
+  color: var(--status-processing);
+}
+.prog-num.waiting {
+  color: #d97706;
+}
+.prog-num.review {
+  color: #9333ea;
+}
+.prog-num.total {
+  color: var(--text-main);
+}
+
+.prog-label {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+}
+
+/* 迷你进度条 */
+.mini-progress-bar {
+  height: 5px;
+  background: var(--border-light);
+  border-radius: 3px;
+  display: flex;
+  overflow: hidden;
+}
+
+.mini-fill.completed {
+  background: var(--status-success);
+}
+.mini-fill.running {
+  background: var(--status-processing);
+}
+
+/* ── 卷料信息卡片 ── */
+.coil-card {
+  border-radius: var(--radius-md);
+  background: var(--bg-base);
+  border: 1px solid var(--border-light);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.coil-card.running-card {
+  border-color: #a7f3d0;
+  background: #f0fdf4;
+}
+
+.coil-card.next-card {
+  background: var(--bg-surface);
+}
+
+/* ── 信息行 ── */
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 1.5rem;
+}
+
+.info-key {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  padding-top: 0.05rem;
+  flex-shrink: 0;
+}
+
+.info-val {
+  font-size: 0.81rem;
+  color: var(--text-main);
+  text-align: right;
+  font-weight: 500;
+}
+
+.info-val.mono {
+  font-family: var(--font-mono);
+  font-weight: 400;
+}
+
+.info-val.small {
+  font-size: 0.72rem;
+  word-break: break-all;
+}
+
+.info-val.remark {
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  text-align: right;
+  word-break: break-all;
+}
+
+/* ── 道次进度（轧机专用） ── */
+.pass-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.pass-dot {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+}
+
+.pass-dot.done {
+  background: var(--status-success);
+  color: white;
+}
+
+.pass-dot.active {
+  background: var(--status-processing);
+  color: white;
+  box-shadow: 0 0 0 2px #93c5fd;
+}
+
+.pass-dot.todo {
+  background: var(--border-light);
+  color: var(--text-muted);
+}
+
+.pass-arrow {
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  color: var(--text-secondary);
+  margin-left: 0.2rem;
+}
+
+.usage-tag {
+  font-size: 0.68rem;
+  background: #eff6ff;
+  color: #2563eb;
+  border-radius: 3px;
+  padding: 0.1rem 0.3rem;
+  margin-left: 0.25rem;
+}
+
+/* ── 空状态 ── */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.empty-state.warning {
+  background: var(--status-warning-bg);
+  color: #b45309;
+}
+
+.empty-state.fault {
+  background: var(--status-error-bg);
+  color: var(--status-error);
+}
+
+.empty-sub {
+  font-size: 0.75rem;
+  opacity: 0.8;
+  font-family: var(--font-mono);
+}

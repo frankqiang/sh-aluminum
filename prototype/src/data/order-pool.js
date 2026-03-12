@@ -3,6 +3,10 @@
  * 来源：MES系统导出的可匹配订单列表
  * 字段设计参考：排产模块调研总结 §4.2.3（订单池核心字段）
  * 实际订单池有44列字段，此处保留排产关键字段
+ *
+ * acceptGrade: 该客户可接受的质量等级数组
+ *   - ['一级品']          → 只接受一级品
+ *   - ['一级品', '二级品'] → 可接受降级品
  */
 
 export const orderPool = [
@@ -27,6 +31,7 @@ export const orderPool = [
         slittedCoils: 0,
         remainingCoils: 5,
         priority: 'urgent',           // 加急
+        acceptGrade: ['一级品', '二级品'],
     },
 
     {
@@ -47,6 +52,7 @@ export const orderPool = [
         slittedCoils: 4,
         remainingCoils: 6,
         priority: 'normal',
+        acceptGrade: ['一级品', '二级品'],
     },
 
     {
@@ -67,6 +73,7 @@ export const orderPool = [
         slittedCoils: 2,
         remainingCoils: 6,
         priority: 'normal',
+        acceptGrade: ['一级品'],
     },
 
     {
@@ -87,6 +94,7 @@ export const orderPool = [
         slittedCoils: 0,
         remainingCoils: 12,
         priority: 'normal',
+        acceptGrade: ['一级品', '二级品'],
     },
 
     {
@@ -107,6 +115,7 @@ export const orderPool = [
         slittedCoils: 0,
         remainingCoils: 10,
         priority: 'urgent',
+        acceptGrade: ['一级品', '二级品'],
     },
 
     // ----------------------------------------------------------------
@@ -130,6 +139,7 @@ export const orderPool = [
         slittedCoils: 5,
         remainingCoils: 7,
         priority: 'urgent',
+        acceptGrade: ['一级品'],
     },
 
     {
@@ -150,6 +160,7 @@ export const orderPool = [
         slittedCoils: 0,
         remainingCoils: 6,
         priority: 'normal',
+        acceptGrade: ['一级品'],
     },
 
     {
@@ -170,6 +181,7 @@ export const orderPool = [
         slittedCoils: 0,
         remainingCoils: 20,
         priority: 'normal',
+        acceptGrade: ['一级品'],
     },
 
     {
@@ -190,6 +202,116 @@ export const orderPool = [
         slittedCoils: 0,
         remainingCoils: 15,
         priority: 'urgent',
+        acceptGrade: ['一级品', '二级品'],
+    },
+
+    // 1100 合金 / 13μm 厚度（精切场景）
+    {
+        orderNo: 'SZ26020100901',
+        contractNo: 'HT2026-0251',
+        customer: '某新能源',
+        product: '电池箔成品',
+        alloy: '1100',
+        width: 750,
+        thickness: 13,
+        lengthMin: 20000,
+        lengthMax: 21000,
+        coreSpec: '152.4管芯/壁厚4管芯',
+        coreLength: 1478,
+        innerDiameter: '152.4mm',
+        deliveryDate: '2026-03-18',
+        totalCoils: 10,
+        slittedCoils: 2,
+        remainingCoils: 8,
+        priority: 'normal',
+        acceptGrade: ['一级品'],
+    },
+
+    {
+        orderNo: 'SZ26020100902',
+        contractNo: 'HT2026-0252',
+        customer: '中航锂电',
+        product: '电池箔成品',
+        alloy: '1100',
+        width: 872,
+        thickness: 13,
+        lengthMin: 10000,
+        lengthMax: 12000,
+        coreSpec: '76管芯/壁厚3管芯',
+        coreLength: 892,
+        innerDiameter: '76mm',
+        deliveryDate: '2026-03-12',
+        totalCoils: 8,
+        slittedCoils: 3,
+        remainingCoils: 5,
+        priority: 'urgent',
+        acceptGrade: ['一级品', '二级品'],
+    },
+
+    {
+        orderNo: 'SZ26020100903',
+        contractNo: 'HT2026-0253',
+        customer: '弘力科技',
+        product: '电池箔成品',
+        alloy: '1100',
+        width: 654,
+        thickness: 13,
+        lengthMin: 6500,
+        lengthMax: 7000,
+        coreSpec: '76管芯/壁厚3管芯',
+        coreLength: 674,
+        innerDiameter: '76mm',
+        deliveryDate: '2026-03-25',
+        totalCoils: 12,
+        slittedCoils: 0,
+        remainingCoils: 12,
+        priority: 'normal',
+        acceptGrade: ['一级品'],
+    },
+
+    // ----------------------------------------------------------------
+    // 电池箔订单（合金: 1070 / 13μm，精切场景）
+    // ----------------------------------------------------------------
+    {
+        orderNo: 'SZ26020100910',
+        contractNo: 'HT2026-0261',
+        customer: '河北兴恒',
+        product: '电池箔成品',
+        alloy: '1070',
+        width: 752,
+        thickness: 13,
+        lengthMin: 13000,
+        lengthMax: 16000,
+        coreSpec: '152.4管芯/壁厚4管芯',
+        coreLength: 772,
+        innerDiameter: '152.4mm',
+        deliveryDate: '2026-03-14',
+        totalCoils: 10,
+        slittedCoils: 2,
+        remainingCoils: 8,
+        priority: 'urgent',
+        acceptGrade: ['一级品'],
+    },
+
+    {
+        orderNo: 'SZ26020100911',
+        contractNo: 'HT2026-0262',
+        customer: '河北兴恒',
+        product: '电池箔成品',
+        alloy: '1070',
+        width: 752,
+        thickness: 13,
+        lengthMin: 13000,
+        lengthMax: 15000,
+        coreSpec: '152.4管芯/壁厚4管芯',
+        coreLength: 772,
+        innerDiameter: '152.4mm',
+        deliveryDate: '2026-03-20',
+        totalCoils: 6,
+        slittedCoils: 0,
+        remainingCoils: 6,
+        priority: 'normal',
+        acceptGrade: ['一级品'],
     },
 
     // ----------------------------------------------------------------
@@ -213,6 +335,7 @@ export const orderPool = [
         slittedCoils: 0,
         remainingCoils: 4,
         priority: 'normal',
+        acceptGrade: ['一级品', '二级品'],
     },
 
     {
@@ -233,6 +356,7 @@ export const orderPool = [
         slittedCoils: 3,
         remainingCoils: 5,
         priority: 'normal',
+        acceptGrade: ['一级品'],
     },
 
     // ----------------------------------------------------------------
@@ -256,6 +380,7 @@ export const orderPool = [
         slittedCoils: 0,
         remainingCoils: 6,
         priority: 'normal',
+        acceptGrade: ['一级品'],
     },
 
     {
@@ -276,6 +401,7 @@ export const orderPool = [
         slittedCoils: 4,
         remainingCoils: 6,
         priority: 'normal',
+        acceptGrade: ['一级品'],
     },
 
     // ----------------------------------------------------------------
@@ -299,6 +425,7 @@ export const orderPool = [
         slittedCoils: 0,
         remainingCoils: 4,
         priority: 'normal',
+        acceptGrade: ['一级品'],
     },
 
     {
@@ -319,5 +446,6 @@ export const orderPool = [
         slittedCoils: 2,
         remainingCoils: 6,
         priority: 'normal',
+        acceptGrade: ['一级品'],
     },
 ]
