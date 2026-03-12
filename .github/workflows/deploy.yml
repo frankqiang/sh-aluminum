@@ -41,7 +41,7 @@ jobs:
         env:
           # 将 base 路径设置为你的 GitHub 仓库名。例如如果你的仓库名是 aluminum，就填 /aluminum/
           # 稍后你可以根据实际的仓库名修改这里
-          VITE_BASE_URL: /aluminum/
+          VITE_BASE_URL: /sh-aluminum/
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
