@@ -48,7 +48,7 @@ import SideBar from './SideBar.vue'
   overflow-y: auto;
   overflow-x: hidden;
   position: relative;
-  padding: var(--spacing-lg) var(--spacing-xl);
+  padding: var(--spacing-lg) var(--spacing-md);
 }
 
 /* 路由切换过渡动画 */

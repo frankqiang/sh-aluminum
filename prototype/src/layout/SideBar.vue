@@ -20,10 +20,6 @@
             <Scissors :size="18" class="icon" />
             <span class="title" v-if="!isCollapsed">分切排产</span>
           </router-link>
-          <router-link to="/finishing" class="menu-item" active-class="active">
-            <Crosshair :size="18" class="icon" />
-            <span class="title" v-if="!isCollapsed">旧版精切(供参考)</span>
-          </router-link>
           <router-link to="/precision-cutting" class="menu-item" active-class="active">
             <Microscope :size="18" class="icon" />
             <span class="title" v-if="!isCollapsed">精切排产</span>
@@ -42,22 +38,54 @@
             <ClipboardCheck :size="18" class="icon" />
             <span class="title" v-if="!isCollapsed">质量评审</span>
           </router-link>
+          <router-link to="/quality/trace" class="menu-item" active-class="active">
+            <FileSearch :size="18" class="icon" />
+            <span class="title" v-if="!isCollapsed">追溯查询</span>
+          </router-link>
+          <router-link to="/quality/stats" class="menu-item" active-class="active">
+            <BarChart2 :size="18" class="icon" />
+            <span class="title" v-if="!isCollapsed">质量统计</span>
+          </router-link>
         </div>
       </div>
 
-      <div class="menu-group disabled">
+      <div class="menu-group open">
         <div class="menu-header">
           <Package :size="18" class="icon" />
           <span class="title" v-if="!isCollapsed">物料管理</span>
-          <ChevronRight :size="14" class="arrow" v-if="!isCollapsed" />
+          <ChevronDown :size="14" class="arrow" v-if="!isCollapsed" />
+        </div>
+        <div class="menu-items">
+          <router-link to="/material/dashboard" class="menu-item" active-class="active">
+            <BarChart3 :size="18" class="icon" />
+            <span class="title" v-if="!isCollapsed">在制品看板</span>
+          </router-link>
+          <router-link to="/material/location" class="menu-item" active-class="active">
+            <MapPin :size="18" class="icon" />
+            <span class="title" v-if="!isCollapsed">库位地图</span>
+          </router-link>
+          <router-link to="/material/coils" class="menu-item" active-class="active">
+            <Search :size="18" class="icon" />
+            <span class="title" v-if="!isCollapsed">料卷查询</span>
+          </router-link>
         </div>
       </div>
 
-      <div class="menu-group disabled">
+      <div class="menu-group open">
         <div class="menu-header">
-          <Settings :size="18" class="icon" />
+          <ClipboardList :size="18" class="icon" />
           <span class="title" v-if="!isCollapsed">生产执行</span>
-          <ChevronRight :size="14" class="arrow" v-if="!isCollapsed" />
+          <ChevronDown :size="14" class="arrow" v-if="!isCollapsed" />
+        </div>
+        <div class="menu-items">
+          <router-link to="/execution/dashboard" class="menu-item" active-class="active">
+            <BarChart3 :size="18" class="icon" />
+            <span class="title" v-if="!isCollapsed">订单看板</span>
+          </router-link>
+          <router-link to="/execution/orders" class="menu-item" active-class="active">
+            <ListOrdered :size="18" class="icon" />
+            <span class="title" v-if="!isCollapsed">订单跟踪</span>
+          </router-link>
         </div>
       </div>
     </nav>
@@ -72,21 +100,26 @@
 
 <script setup>
 import { ref } from 'vue'
-import { 
-  CalendarClock, 
-  LayoutDashboard, 
-  Cpu, 
-  Scissors, 
-  Crosshair, 
-  ShieldCheck, 
-  Package, 
-  Settings,
+import {
+  CalendarClock,
+  LayoutDashboard,
+  Cpu,
+  Scissors,
+  ShieldCheck,
+  Package,
+  ClipboardList,
   ChevronDown,
   ChevronRight,
   PanelLeftClose,
   PanelLeftOpen,
   Microscope,
-  ClipboardCheck
+  ClipboardCheck,
+  FileSearch,
+  BarChart3,
+  BarChart2,
+  MapPin,
+  Search,
+  ListOrdered
 } from 'lucide-vue-next'
 
 const isCollapsed = ref(false)
@@ -122,6 +155,7 @@ const toggleCollapse = () => {
 .nav-menu::-webkit-scrollbar {
   width: 4px;
 }
+
 .nav-menu::-webkit-scrollbar-thumb {
   background: var(--border-light);
   border-radius: 4px;
